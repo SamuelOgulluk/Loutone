@@ -2,6 +2,8 @@
 
 Application DAW desktop locale (Tauri 2 + Vite + React + Web Audio). Pas d'IA en V1.
 
+**Demo en ligne :** https://samuelogulluk.github.io/otty/
+
 ## Prérequis
 
 - Node.js 20+
@@ -24,6 +26,9 @@ Avec Rust installé :
 npm run tauri:dev
 ```
 
+## Déploiement
+
+Chaque push sur `master` déploie le site via GitHub Actions → GitHub Pages.
 ## Raccourcis
 
 | Touche | Action |

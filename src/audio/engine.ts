@@ -62,7 +62,7 @@ export class AudioEngine {
     this.metroGain.gain.value = 0.55
     this.metroGain.connect(this.master)
     try {
-      await ctx.audioWorklet.addModule('/worklets/scheduler.worklet.js')
+      await ctx.audioWorklet.addModule(`${import.meta.env.BASE_URL}worklets/scheduler.worklet.js`)
       this.worklet = new AudioWorkletNode(ctx, 'transport-scheduler')
       const silent = ctx.createGain()
       silent.gain.value = 0

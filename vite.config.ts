@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
+  // GitHub Pages : /otty/ — local / Tauri : /
+  base: process.env.GITHUB_PAGES === 'true' ? '/otty/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

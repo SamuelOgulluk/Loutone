@@ -7,7 +7,7 @@ type PackMap = Record<string, SampleNote[]>
 const SAMPLE_PACKS = mapsJson as PackMap
 
 const CDN = 'https://cdn.jsdelivr.net/gh/nbrosowsky/tonejs-instruments@master/samples'
-const LOCAL = '/samples'
+const LOCAL = `${import.meta.env.BASE_URL}samples`
 const DRUM_CDN = 'https://tonejs.github.io/audio/drum-samples/acoustic-kit'
 
 const bufferCache = new Map<string, AudioBuffer | Promise<AudioBuffer>>()
