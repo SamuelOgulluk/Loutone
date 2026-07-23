@@ -1,0 +1,1568 @@
+{
+  "bass-electric": [
+    {
+      "midi": 25,
+      "file": "Cs1.mp3"
+    },
+    {
+      "midi": 28,
+      "file": "E1.mp3"
+    },
+    {
+      "midi": 31,
+      "file": "G1.mp3"
+    },
+    {
+      "midi": 34,
+      "file": "As1.mp3"
+    },
+    {
+      "midi": 37,
+      "file": "Cs2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 43,
+      "file": "G2.mp3"
+    },
+    {
+      "midi": 46,
+      "file": "As2.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 58,
+      "file": "As3.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 70,
+      "file": "As4.mp3"
+    }
+  ],
+  "cello": [
+    {
+      "midi": 36,
+      "file": "C2.mp3"
+    },
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 39,
+      "file": "Ds2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 41,
+      "file": "F2.mp3"
+    },
+    {
+      "midi": 43,
+      "file": "G2.mp3"
+    },
+    {
+      "midi": 44,
+      "file": "Gs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 46,
+      "file": "As2.mp3"
+    },
+    {
+      "midi": 47,
+      "file": "B2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 56,
+      "file": "Gs3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 58,
+      "file": "As3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 62,
+      "file": "D4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 71,
+      "file": "B4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    }
+  ],
+  "contrabass": [
+    {
+      "midi": 30,
+      "file": "Fs1.mp3"
+    },
+    {
+      "midi": 31,
+      "file": "G1.mp3"
+    },
+    {
+      "midi": 34,
+      "file": "As1.mp3"
+    },
+    {
+      "midi": 36,
+      "file": "C2.mp3"
+    },
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 44,
+      "file": "Gs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 56,
+      "file": "Gs3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    }
+  ],
+  "flute": [
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    },
+    {
+      "midi": 88,
+      "file": "E6.mp3"
+    },
+    {
+      "midi": 93,
+      "file": "A6.mp3"
+    },
+    {
+      "midi": 96,
+      "file": "C7.mp3"
+    }
+  ],
+  "guitar-acoustic": [
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 39,
+      "file": "Ds2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 41,
+      "file": "F2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 43,
+      "file": "G2.mp3"
+    },
+    {
+      "midi": 44,
+      "file": "Gs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 46,
+      "file": "As2.mp3"
+    },
+    {
+      "midi": 47,
+      "file": "B2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 56,
+      "file": "Gs3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 58,
+      "file": "As3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 62,
+      "file": "D4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 70,
+      "file": "As4.mp3"
+    },
+    {
+      "midi": 71,
+      "file": "B4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 73,
+      "file": "Cs5.mp3"
+    },
+    {
+      "midi": 74,
+      "file": "D5.mp3"
+    }
+  ],
+  "guitar-electric": [
+    {
+      "midi": 37,
+      "file": "Cs2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 75,
+      "file": "Ds5.mp3"
+    },
+    {
+      "midi": 78,
+      "file": "Fs5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    }
+  ],
+  "guitar-nylon": [
+    {
+      "midi": 35,
+      "file": "B1.mp3"
+    },
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 44,
+      "file": "Gs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 47,
+      "file": "B2.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 71,
+      "file": "B4.mp3"
+    },
+    {
+      "midi": 73,
+      "file": "Cs5.mp3"
+    },
+    {
+      "midi": 74,
+      "file": "D5.mp3"
+    },
+    {
+      "midi": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "midi": 78,
+      "file": "Fs5.mp3"
+    },
+    {
+      "midi": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "midi": 80,
+      "file": "Gs5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 82,
+      "file": "As5.mp3"
+    }
+  ],
+  "harmonium": [
+    {
+      "midi": 36,
+      "file": "C2.mp3"
+    },
+    {
+      "midi": 37,
+      "file": "Cs2.mp3"
+    },
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 39,
+      "file": "Ds2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 41,
+      "file": "F2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 43,
+      "file": "G2.mp3"
+    },
+    {
+      "midi": 44,
+      "file": "Gs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 46,
+      "file": "As2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 56,
+      "file": "Gs3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 58,
+      "file": "As3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 62,
+      "file": "D4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 70,
+      "file": "As4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 73,
+      "file": "Cs5.mp3"
+    },
+    {
+      "midi": 74,
+      "file": "D5.mp3"
+    }
+  ],
+  "harp": [
+    {
+      "midi": 28,
+      "file": "E1.mp3"
+    },
+    {
+      "midi": 31,
+      "file": "G1.mp3"
+    },
+    {
+      "midi": 35,
+      "file": "B1.mp3"
+    },
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 41,
+      "file": "F2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "midi": 62,
+      "file": "D4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "midi": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "midi": 83,
+      "file": "B5.mp3"
+    },
+    {
+      "midi": 86,
+      "file": "D6.mp3"
+    },
+    {
+      "midi": 89,
+      "file": "F6.mp3"
+    },
+    {
+      "midi": 93,
+      "file": "A6.mp3"
+    },
+    {
+      "midi": 95,
+      "file": "B6.mp3"
+    },
+    {
+      "midi": 98,
+      "file": "D7.mp3"
+    },
+    {
+      "midi": 101,
+      "file": "F7.mp3"
+    }
+  ],
+  "organ": [
+    {
+      "midi": 24,
+      "file": "C1.mp3"
+    },
+    {
+      "midi": 27,
+      "file": "Ds1.mp3"
+    },
+    {
+      "midi": 30,
+      "file": "Fs1.mp3"
+    },
+    {
+      "midi": 33,
+      "file": "A1.mp3"
+    },
+    {
+      "midi": 36,
+      "file": "C2.mp3"
+    },
+    {
+      "midi": 39,
+      "file": "Ds2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 75,
+      "file": "Ds5.mp3"
+    },
+    {
+      "midi": 78,
+      "file": "Fs5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    }
+  ],
+  "piano": [
+    {
+      "midi": 24,
+      "file": "C1.mp3"
+    },
+    {
+      "midi": 25,
+      "file": "Cs1.mp3"
+    },
+    {
+      "midi": 26,
+      "file": "D1.mp3"
+    },
+    {
+      "midi": 27,
+      "file": "Ds1.mp3"
+    },
+    {
+      "midi": 28,
+      "file": "E1.mp3"
+    },
+    {
+      "midi": 29,
+      "file": "F1.mp3"
+    },
+    {
+      "midi": 30,
+      "file": "Fs1.mp3"
+    },
+    {
+      "midi": 31,
+      "file": "G1.mp3"
+    },
+    {
+      "midi": 32,
+      "file": "Gs1.mp3"
+    },
+    {
+      "midi": 33,
+      "file": "A1.mp3"
+    },
+    {
+      "midi": 34,
+      "file": "As1.mp3"
+    },
+    {
+      "midi": 35,
+      "file": "B1.mp3"
+    },
+    {
+      "midi": 36,
+      "file": "C2.mp3"
+    },
+    {
+      "midi": 37,
+      "file": "Cs2.mp3"
+    },
+    {
+      "midi": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "midi": 39,
+      "file": "Ds2.mp3"
+    },
+    {
+      "midi": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "midi": 41,
+      "file": "F2.mp3"
+    },
+    {
+      "midi": 42,
+      "file": "Fs2.mp3"
+    },
+    {
+      "midi": 43,
+      "file": "G2.mp3"
+    },
+    {
+      "midi": 44,
+      "file": "Gs2.mp3"
+    },
+    {
+      "midi": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "midi": 46,
+      "file": "As2.mp3"
+    },
+    {
+      "midi": 47,
+      "file": "B2.mp3"
+    },
+    {
+      "midi": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 56,
+      "file": "Gs3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 58,
+      "file": "As3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 62,
+      "file": "D4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 70,
+      "file": "As4.mp3"
+    },
+    {
+      "midi": 71,
+      "file": "B4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 73,
+      "file": "Cs5.mp3"
+    },
+    {
+      "midi": 74,
+      "file": "D5.mp3"
+    },
+    {
+      "midi": 75,
+      "file": "Ds5.mp3"
+    },
+    {
+      "midi": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "midi": 77,
+      "file": "F5.mp3"
+    },
+    {
+      "midi": 78,
+      "file": "Fs5.mp3"
+    },
+    {
+      "midi": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "midi": 80,
+      "file": "Gs5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 82,
+      "file": "As5.mp3"
+    },
+    {
+      "midi": 83,
+      "file": "B5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    },
+    {
+      "midi": 85,
+      "file": "Cs6.mp3"
+    },
+    {
+      "midi": 86,
+      "file": "D6.mp3"
+    },
+    {
+      "midi": 87,
+      "file": "Ds6.mp3"
+    },
+    {
+      "midi": 88,
+      "file": "E6.mp3"
+    },
+    {
+      "midi": 89,
+      "file": "F6.mp3"
+    },
+    {
+      "midi": 90,
+      "file": "Fs6.mp3"
+    },
+    {
+      "midi": 91,
+      "file": "G6.mp3"
+    },
+    {
+      "midi": 92,
+      "file": "Gs6.mp3"
+    },
+    {
+      "midi": 93,
+      "file": "A6.mp3"
+    },
+    {
+      "midi": 94,
+      "file": "As6.mp3"
+    },
+    {
+      "midi": 95,
+      "file": "B6.mp3"
+    },
+    {
+      "midi": 96,
+      "file": "C7.mp3"
+    },
+    {
+      "midi": 97,
+      "file": "Cs7.mp3"
+    },
+    {
+      "midi": 98,
+      "file": "D7.mp3"
+    },
+    {
+      "midi": 99,
+      "file": "Ds7.mp3"
+    },
+    {
+      "midi": 100,
+      "file": "E7.mp3"
+    },
+    {
+      "midi": 101,
+      "file": "F7.mp3"
+    },
+    {
+      "midi": 102,
+      "file": "Fs7.mp3"
+    },
+    {
+      "midi": 103,
+      "file": "G7.mp3"
+    },
+    {
+      "midi": 104,
+      "file": "Gs7.mp3"
+    },
+    {
+      "midi": 105,
+      "file": "A7.mp3"
+    },
+    {
+      "midi": 106,
+      "file": "As7.mp3"
+    },
+    {
+      "midi": 107,
+      "file": "B7.mp3"
+    }
+  ],
+  "saxophone": [
+    {
+      "midi": 49,
+      "file": "Cs3.mp3"
+    },
+    {
+      "midi": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "midi": 51,
+      "file": "Ds3.mp3"
+    },
+    {
+      "midi": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "midi": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "midi": 54,
+      "file": "Fs3.mp3"
+    },
+    {
+      "midi": 55,
+      "file": "G3.mp3"
+    },
+    {
+      "midi": 56,
+      "file": "Gs3.mp3"
+    },
+    {
+      "midi": 58,
+      "file": "As3.mp3"
+    },
+    {
+      "midi": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 61,
+      "file": "Cs4.mp3"
+    },
+    {
+      "midi": 62,
+      "file": "D4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 70,
+      "file": "As4.mp3"
+    },
+    {
+      "midi": 71,
+      "file": "B4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 73,
+      "file": "Cs5.mp3"
+    },
+    {
+      "midi": 74,
+      "file": "D5.mp3"
+    },
+    {
+      "midi": 75,
+      "file": "Ds5.mp3"
+    },
+    {
+      "midi": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "midi": 77,
+      "file": "F5.mp3"
+    },
+    {
+      "midi": 78,
+      "file": "Fs5.mp3"
+    },
+    {
+      "midi": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "midi": 80,
+      "file": "Gs5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    }
+  ],
+  "trumpet": [
+    {
+      "midi": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "midi": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 70,
+      "file": "As4.mp3"
+    },
+    {
+      "midi": 74,
+      "file": "D5.mp3"
+    },
+    {
+      "midi": 77,
+      "file": "F5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    }
+  ],
+  "violin": [
+    {
+      "midi": 57,
+      "file": "A3.mp3"
+    },
+    {
+      "midi": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "midi": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 69,
+      "file": "A4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "midi": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "midi": 81,
+      "file": "A5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    },
+    {
+      "midi": 88,
+      "file": "E6.mp3"
+    },
+    {
+      "midi": 91,
+      "file": "G6.mp3"
+    },
+    {
+      "midi": 93,
+      "file": "A6.mp3"
+    },
+    {
+      "midi": 96,
+      "file": "C7.mp3"
+    }
+  ],
+  "xylophone": [
+    {
+      "midi": 67,
+      "file": "G4.mp3"
+    },
+    {
+      "midi": 72,
+      "file": "C5.mp3"
+    },
+    {
+      "midi": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "midi": 84,
+      "file": "C6.mp3"
+    },
+    {
+      "midi": 91,
+      "file": "G6.mp3"
+    },
+    {
+      "midi": 96,
+      "file": "C7.mp3"
+    },
+    {
+      "midi": 103,
+      "file": "G7.mp3"
+    },
+    {
+      "midi": 108,
+      "file": "C8.mp3"
+    }
+  ]
+}
