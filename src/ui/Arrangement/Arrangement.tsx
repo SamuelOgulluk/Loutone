@@ -410,17 +410,19 @@ export function Arrangement() {
     if (e.button !== 0) return
     e.preventDefault()
     setContextMenu(null)
-    const beat = snapBeat(beatFromClientX(e.clientX))
-    audioEngine.seek(beat)
-    setPositionBeat(beat)
-    selectClips([], null, null)
-    setSelection({
-      trackId: null,
-      clipId: null,
-      selectedClipIds: [],
-      noteIds: [],
-      effectId: null,
-    })
+    if (e.ctrlKey || e.metaKey) {
+      const beat = snapBeat(beatFromClientX(e.clientX))
+      audioEngine.seek(beat)
+      setPositionBeat(beat)
+      return
+    }
+    // Démarrer une sélection rectangle depuis le vide
+    const pt = lanePointFromClient(e.clientX, e.clientY)
+    const next = { x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y }
+    marqueeRef.current = next
+    marqueeAdditiveRef.current = e.shiftKey
+    setMarquee(next)
+    lanesRef.current?.setPointerCapture(e.pointerId)
   }
 
   const onLaneContextMenu = (track: Track, e: MouseEvent, clipId: string | null = null) => {
@@ -978,7 +980,7 @@ export function Arrangement() {
               <div
                 className="arr-lanes-void absolute left-0 right-0 bottom-0 cursor-text"
                 style={{ top: tracksHeight, width, minHeight: 80 }}
-                title="Cliquer pour placer la tête de lecture"
+                title="Glisser pour sélectionner · Ctrl+clic : tête de lecture"
                 onPointerDown={onVoidPointerDown}
               />
               {marquee && (
