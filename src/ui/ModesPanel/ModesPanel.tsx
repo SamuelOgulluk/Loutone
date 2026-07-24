@@ -1,29 +1,27 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { TRACK_COLORS, uid } from '@/types/project'
 import {
-  CHORD_RHYTHMS,
   DEFAULT_KEY,
+  GROOVE_PRESETS,
   KEY_TONICS,
   MODE_EVOLUTIONS,
   SECTION_KINDS,
   SECTION_LABELS,
+  cellsToStepHits,
   chordsToMidiNotes,
-  defaultRhythmPattern,
   defaultStructure,
   evolutionChords,
   evolutionDegreesLabel,
   evolutionsByGenre,
   formatKey,
   getEvolution,
-  makeRhythmCell,
+  getGroove,
+  grooveToCells,
   resolveSectionChords,
-  rhythmNoteLabel,
-  rhythmPatternFromPreset,
   rhythmPatternTotal,
-  type ChordRhythmId,
+  stepHitsToCells,
   type ModeEvolution,
   type MusicalKey,
   type RhythmCell,
@@ -31,13 +29,11 @@ import {
   type StructureSection,
 } from '@/midi/progressions'
 
-type Props = {
-  open: boolean
-  onClose: () => void
-}
+const STEPS_PER_BAR = 16
 
-export function ModesPanel({ open, onClose }: Props) {
+export function ModesPanel() {
   const project = useDawStore((s) => s.project)
+  const setMainView = useDawStore((s) => s.setMainView)
   const addBlankTrack = useDawStore((s) => s.addBlankTrack)
   const assignInstrument = useDawStore((s) => s.assignInstrument)
   const addMidiClip = useDawStore((s) => s.addMidiClip)
@@ -51,21 +47,19 @@ export function ModesPanel({ open, onClose }: Props) {
   const [sections, setSections] = useState(defaultStructure)
   const [selectedEvo, setSelectedEvo] = useState(MODE_EVOLUTIONS[0]?.id ?? 'pop-clair')
   const [activeSectionId, setActiveSectionId] = useState(sections[1]?.id ?? sections[0].id)
-  const [rhythmCells, setRhythmCells] = useState(() => defaultRhythmPattern(4))
-  const [selectedCellId, setSelectedCellId] = useState('')
+  const [grooveId, setGrooveId] = useState('charleston')
+  const [rhythmCells, setRhythmCells] = useState(() => grooveToCells(getGroove('charleston'), 4))
   const [status, setStatus] = useState('')
 
   const genreGroups = useMemo(() => evolutionsByGenre(), [])
   const patternBeats = useMemo(() => rhythmCells.map((c) => c.beats), [rhythmCells])
   const patternTotal = rhythmPatternTotal(rhythmCells)
-  const patternBars = Math.max(1, Math.ceil(patternTotal / Math.max(1, beatsPerBar) - 0.001))
+  const stepState = useMemo(
+    () => cellsToStepHits(rhythmCells, beatsPerBar, STEPS_PER_BAR),
+    [rhythmCells, beatsPerBar],
+  )
 
-  useEffect(() => {
-    if (!open) audioEngine.stopPreview()
-    return () => audioEngine.stopPreview()
-  }, [open])
-
-  if (!open) return null
+  useEffect(() => () => audioEngine.stopPreview(), [])
 
   const chordsOf = (evo: ModeEvolution) => evolutionChords(evo, key)
 
@@ -88,6 +82,13 @@ export function ModesPanel({ open, onClose }: Props) {
     })
   }
 
+  const applyCells = (cells: RhythmCell[], nextGrooveId?: string) => {
+    setRhythmCells(cells)
+    if (nextGrooveId) setGrooveId(nextGrooveId)
+    const evo = getEvolution(selectedEvo)
+    if (evo) previewEvolution(evo, cells.map((c) => c.beats))
+  }
+
   const rekeySections = (nextKey: MusicalKey) => {
     setSections((prev) =>
       prev.map((s) => {
@@ -107,16 +108,6 @@ export function ModesPanel({ open, onClose }: Props) {
     if (evo) previewEvolution(evo, patternBeats, next)
   }
 
-  const setPattern = (cells: RhythmCell[], replay = true) => {
-    const next = cells.length ? cells : defaultRhythmPattern(beatsPerBar)
-    setRhythmCells(next)
-    if (!next.find((c) => c.id === selectedCellId)) setSelectedCellId(next[0]?.id ?? '')
-    if (replay) {
-      const evo = getEvolution(selectedEvo)
-      if (evo) previewEvolution(evo, next.map((c) => c.beats))
-    }
-  }
-
   const assignEvoToActive = (evo: ModeEvolution) => {
     const chords = chordsOf(evo)
     setSelectedEvo(evo.id)
@@ -130,42 +121,15 @@ export function ModesPanel({ open, onClose }: Props) {
     previewEvolution(evo)
   }
 
-  const appendNote = (beats: number) => {
-    setPattern([...rhythmCells, makeRhythmCell(beats)])
+  const pickGroove = (id: string) => {
+    applyCells(grooveToCells(getGroove(id), beatsPerBar), id)
   }
 
-  const appendTriplet = () => {
-    const unit = beatsPerBar / 3
-    setPattern([...rhythmCells, makeRhythmCell(unit), makeRhythmCell(unit), makeRhythmCell(unit)])
-  }
-
-  const loadPreset = (id: ChordRhythmId) => {
-    setPattern(rhythmPatternFromPreset(id, beatsPerBar))
-  }
-
-  const removeSelectedCell = () => {
-    if (rhythmCells.length <= 1) return
-    setPattern(rhythmCells.filter((c) => c.id !== selectedCellId))
-  }
-
-  const splitSelectedCell = () => {
-    const idx = rhythmCells.findIndex((c) => c.id === selectedCellId)
-    if (idx < 0) return
-    const cell = rhythmCells[idx]
-    if (cell.beats < 0.5) return
-    const half = cell.beats / 2
-    const next = [...rhythmCells]
-    next.splice(idx, 1, makeRhythmCell(half), makeRhythmCell(half))
-    setSelectedCellId(next[idx].id)
-    setPattern(next)
-  }
-
-  const nudgeSelected = (factor: number) => {
-    const idx = rhythmCells.findIndex((c) => c.id === selectedCellId)
-    if (idx < 0) return
-    const beats = Math.max(0.25, Math.round(rhythmCells[idx].beats * factor * 4) / 4)
-    const next = rhythmCells.map((c, i) => (i === idx ? { ...c, beats } : c))
-    setPattern(next)
+  const toggleStep = (index: number) => {
+    if (index === 0) return
+    const hits = [...stepState.hits]
+    hits[index] = !hits[index]
+    applyCells(stepHitsToCells(hits, beatsPerBar, STEPS_PER_BAR), 'custom')
   }
 
   const addSection = () => {
@@ -268,304 +232,253 @@ export function ModesPanel({ open, onClose }: Props) {
       effectId: null,
     })
     setPianoRollOpen(true)
-    setStatus(`${clips.length} section${clips.length > 1 ? 's' : ''} → Piano`)
+    setMainView('arrange')
+    setStatus(`${clips.length} section${clips.length > 1 ? 's' : ''} → Arrangement`)
     window.setTimeout(() => setStatus(''), 3500)
   }
 
-  return createPortal(
-    <div className="modes-overlay" role="dialog" aria-modal="true" aria-label="Modes et structure">
-      <button
-        type="button"
-        className="modes-backdrop"
-        aria-label="Fermer"
-        onClick={() => {
-          audioEngine.stopPreview()
-          onClose()
-        }}
-      />
-      <div className="modes-panel panel">
-        <header className="modes-head">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">Modes & structure</h2>
-            <p className="text-[11px] text-[var(--muted)] mt-0.5">
-              Choisis la tonalité, une grille en degrés par genre, puis applique en MIDI piano.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn btn-compact"
-            onClick={() => {
-              audioEngine.stopPreview()
-              onClose()
-            }}
-          >
-            Fermer
+  const simpleGrooves = GROOVE_PRESETS.filter((g) => g.category === 'simple')
+  const groovyGrooves = GROOVE_PRESETS.filter((g) => g.category === 'groovy')
+
+  return (
+    <div className="modes-workspace panel h-full min-h-0 overflow-hidden flex flex-col">
+      <header className="modes-workspace-head">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Modes & structure</h2>
+          <p className="text-[11px] text-[var(--muted)] mt-0.5">
+            Onglet dédié — tonalité, grilles par genre, groove, structure.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {status && <span className="text-[11px] text-[var(--muted)]">{status}</span>}
+          <button type="button" className="btn btn-compact" onClick={() => setMainView('arrange')}>
+            ← Arrangement
           </button>
-        </header>
+          <button type="button" className="btn btn-accent" onClick={applyToProject}>
+            Appliquer → Piano
+          </button>
+        </div>
+      </header>
 
-        <div className="modes-body">
-          <aside className="modes-lib">
-            <div className="modes-keybar">
-              <div className="modes-section-title mb-0">Tonalité</div>
-              <div className="modes-key-controls">
-                <select
-                  className="modes-key-tonic"
-                  value={key.tonic}
-                  onChange={(e) => onKeyChange({ tonic: e.target.value })}
-                  aria-label="Tonalité"
+      <div className="modes-workspace-body">
+        <aside className="modes-lib">
+          <div className="modes-keybar">
+            <div className="modes-section-title mb-0">Tonalité</div>
+            <div className="modes-key-controls">
+              <select
+                className="modes-key-tonic"
+                value={key.tonic}
+                onChange={(e) => onKeyChange({ tonic: e.target.value })}
+                aria-label="Tonalité"
+              >
+                {KEY_TONICS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <div className="modes-key-mode">
+                <button
+                  type="button"
+                  className={`btn btn-compact ${key.mode === 'maj' ? 'btn-active' : ''}`}
+                  onClick={() => onKeyChange({ mode: 'maj' })}
                 >
-                  {KEY_TONICS.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                <div className="modes-key-mode">
-                  <button
-                    type="button"
-                    className={`btn btn-compact ${key.mode === 'maj' ? 'btn-active' : ''}`}
-                    onClick={() => onKeyChange({ mode: 'maj' })}
-                  >
-                    maj
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn btn-compact ${key.mode === 'min' ? 'btn-active' : ''}`}
-                    onClick={() => onKeyChange({ mode: 'min' })}
-                  >
-                    min
-                  </button>
-                </div>
-                <span className="modes-key-badge mono">{formatKey(key)}</span>
-              </div>
-            </div>
-
-            <div className="modes-section-title">Bibliothèque — par genre</div>
-            <div className="modes-lib-list">
-              {genreGroups.map((group) => (
-                <div key={group.genre} className="modes-genre">
-                  <div className="modes-genre-title">{group.label}</div>
-                  {group.items.map((evo) => {
-                    const active = selectedEvo === evo.id
-                    const chords = chordsOf(evo)
-                    return (
-                      <button
-                        key={evo.id}
-                        type="button"
-                        className={`modes-evo ${active ? 'is-active' : ''}`}
-                        onClick={() => assignEvoToActive(evo)}
-                        title="Écouter et assigner à la section sélectionnée"
-                      >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="font-medium text-sm">{evo.label}</span>
-                          <span className="text-[10px] text-[var(--muted)] mono">{evo.order}</span>
-                        </div>
-                        <div className="text-[10px] text-[var(--muted)] mt-0.5">{evo.feel}</div>
-                        <div className="modes-degrees mono mt-1.5">{evolutionDegreesLabel(evo)}</div>
-                        <div className="modes-chords mono mt-1">{chords.join(' · ')}</div>
-                      </button>
-                    )
-                  })}
-                </div>
-              ))}
-            </div>
-          </aside>
-
-          <section className="modes-struct">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="modes-section-title mb-0">Structure du morceau</div>
-              <button type="button" className="btn btn-compact" onClick={addSection}>
-                + Section
-              </button>
-            </div>
-
-            <div className="modes-score mb-3">
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="modes-section-title mb-0">Rythme — partition</div>
-                <span className="text-[10px] text-[var(--muted)] mono">
-                  {patternTotal.toFixed(patternTotal % 1 ? 2 : 0)} temps · {patternBars} mes.
-                </span>
-              </div>
-
-              <div className="modes-score-palette">
-                <button type="button" className="btn btn-compact" title="Ajouter une ronde" onClick={() => appendNote(beatsPerBar)}>
-                  𝅝
-                </button>
-                <button type="button" className="btn btn-compact" title="Ajouter une blanche" onClick={() => appendNote(beatsPerBar / 2)}>
-                  𝅗
-                </button>
-                <button type="button" className="btn btn-compact" title="Ajouter une noire" onClick={() => appendNote(beatsPerBar / 4)}>
-                  ♩
-                </button>
-                <button type="button" className="btn btn-compact" title="Ajouter une croche" onClick={() => appendNote(beatsPerBar / 8)}>
-                  ♪
-                </button>
-                <button type="button" className="btn btn-compact" title="Ajouter un groupe de triolets" onClick={appendTriplet}>
-                  ⅓×3
-                </button>
-                <span className="modes-score-sep" />
-                <button type="button" className="btn btn-compact" title="Couper en deux" onClick={splitSelectedCell}>
-                  ÷2
-                </button>
-                <button type="button" className="btn btn-compact" title="Allonger" onClick={() => nudgeSelected(2)}>
-                  ×2
-                </button>
-                <button type="button" className="btn btn-compact" title="Raccourcir" onClick={() => nudgeSelected(0.5)}>
-                  ×½
-                </button>
-                <button type="button" className="btn btn-compact" title="Supprimer la note" onClick={removeSelectedCell}>
-                  ⌫
+                  maj
                 </button>
                 <button
                   type="button"
-                  className="btn btn-compact"
-                  title="Effacer la partition"
-                  onClick={() => setPattern(defaultRhythmPattern(beatsPerBar))}
+                  className={`btn btn-compact ${key.mode === 'min' ? 'btn-active' : ''}`}
+                  onClick={() => onKeyChange({ mode: 'min' })}
                 >
-                  Reset
+                  min
                 </button>
               </div>
+              <span className="modes-key-badge mono">{formatKey(key)}</span>
+            </div>
+          </div>
 
-              <div className="modes-score-staff" role="list" aria-label="Partition du rythme">
-                {Array.from({ length: Math.max(0, patternBars - 1) }, (_, bar) => {
-                  const at = (bar + 1) * beatsPerBar
-                  if (at >= patternTotal - 0.01) return null
-                  return (
-                    <div
-                      key={`bar-${bar}`}
-                      className="modes-score-barline"
-                      style={{ left: `${(at / Math.max(patternTotal, 0.25)) * 100}%` }}
-                    />
-                  )
-                })}
-                {rhythmCells.map((cell, i) => {
-                  const meta = rhythmNoteLabel(cell.beats, beatsPerBar)
-                  const active = cell.id === selectedCellId || (!selectedCellId && i === 0)
+          <div className="modes-section-title">Bibliothèque — par genre</div>
+          <div className="modes-lib-list">
+            {genreGroups.map((group) => (
+              <div key={group.genre} className="modes-genre">
+                <div className="modes-genre-title">{group.label}</div>
+                {group.items.map((evo) => {
+                  const active = selectedEvo === evo.id
+                  const chords = chordsOf(evo)
                   return (
                     <button
-                      key={cell.id}
+                      key={evo.id}
                       type="button"
-                      role="listitem"
-                      className={`modes-score-note ${active ? 'is-active' : ''}`}
-                      style={{ flexGrow: cell.beats, flexBasis: 0 }}
-                      title={`${meta.name} · ${cell.beats} temps — double-clic pour couper`}
-                      onClick={() => setSelectedCellId(cell.id)}
-                      onDoubleClick={() => {
-                        setSelectedCellId(cell.id)
-                        const half = cell.beats / 2
-                        if (half < 0.25) return
-                        const idx = rhythmCells.findIndex((c) => c.id === cell.id)
-                        if (idx < 0) return
-                        const next = [...rhythmCells]
-                        next.splice(idx, 1, makeRhythmCell(half), makeRhythmCell(half))
-                        setSelectedCellId(next[idx].id)
-                        setPattern(next)
-                      }}
+                      className={`modes-evo ${active ? 'is-active' : ''}`}
+                      onClick={() => assignEvoToActive(evo)}
+                      title="Écouter et assigner à la section sélectionnée"
                     >
-                      <span className="modes-score-glyph">{meta.glyph}</span>
-                      <span className="modes-score-beats mono">
-                        {cell.beats % 1 ? cell.beats.toFixed(2) : cell.beats}
-                      </span>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-medium text-sm">{evo.label}</span>
+                        <span className="text-[10px] text-[var(--muted)] mono">{evo.order}</span>
+                      </div>
+                      <div className="text-[10px] text-[var(--muted)] mt-0.5">{evo.feel}</div>
+                      <div className="modes-degrees mono mt-1.5">{evolutionDegreesLabel(evo)}</div>
+                      <div className="modes-chords mono mt-1">{chords.join(' · ')}</div>
                     </button>
                   )
                 })}
               </div>
+            ))}
+          </div>
+        </aside>
 
-              <div className="modes-score-presets">
-                <span className="text-[10px] text-[var(--muted)]">Modèles</span>
-                {CHORD_RHYTHMS.map((r) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    className="btn btn-compact"
-                    title={r.hint}
-                    onClick={() => loadPreset(r.id)}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
+        <section className="modes-struct">
+          <div className="modes-groove-block">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="modes-section-title mb-0">Groove des accords</div>
+              <span className="text-[10px] text-[var(--muted)] mono">
+                {patternTotal.toFixed(patternTotal % 1 ? 2 : 0)} temps
+              </span>
             </div>
 
-            <div className="modes-struct-list">
-              {sections.map((sec) => {
-                const selected = activeSectionId === sec.id
-                const preview = resolveSectionChords(sec, key)
-                return (
-                  <div
-                    key={sec.id}
-                    className={`modes-sec ${selected ? 'is-active' : ''}`}
-                    onClick={() => setActiveSectionId(sec.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={sec.kind}
-                        onChange={(e) => updateSection(sec.id, { kind: e.target.value as SectionKind })}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {SECTION_KINDS.map((k) => (
-                          <option key={k} value={k}>
-                            {SECTION_LABELS[k]}
-                          </option>
-                        ))}
-                      </select>
-                      <label className="flex items-center gap-1 text-[10px] text-[var(--muted)]">
-                        Mesures
-                        <input
-                          type="number"
-                          className="mono w-12"
-                          min={1}
-                          max={32}
-                          value={sec.bars}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={(e) =>
-                            updateSection(sec.id, { bars: Math.max(1, Number(e.target.value) || 1) })
-                          }
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="btn btn-compact ml-auto"
-                        title="Supprimer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          removeSection(sec.id)
-                        }}
-                      >
-                        ×
-                      </button>
-                    </div>
-                    <textarea
-                      className="modes-sec-chords mono"
-                      rows={2}
-                      placeholder="Cmaj9 A7(b9) Dm9 …"
-                      value={sec.customChords}
-                      onClick={(e) => e.stopPropagation()}
-                      onChange={(e) =>
-                        updateSection(sec.id, {
-                          customChords: e.target.value,
-                          progressionId: null,
-                        })
-                      }
+            <div className="modes-groove-label">Simple</div>
+            <div className="modes-groove-grid">
+              {simpleGrooves.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`modes-groove-card ${grooveId === g.id ? 'is-active' : ''}`}
+                  onClick={() => pickGroove(g.id)}
+                >
+                  <span className="font-medium text-sm">{g.label}</span>
+                  <span className="text-[10px] text-[var(--muted)]">{g.feel}</span>
+                  <span className="modes-groove-dots" aria-hidden>
+                    {scaleDots(g.beats)}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="modes-groove-label">Groovy</div>
+            <div className="modes-groove-grid">
+              {groovyGrooves.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`modes-groove-card ${grooveId === g.id ? 'is-active' : ''}`}
+                  onClick={() => pickGroove(g.id)}
+                >
+                  <span className="font-medium text-sm">{g.label}</span>
+                  <span className="text-[10px] text-[var(--muted)]">{g.feel}</span>
+                  <span className="modes-groove-dots" aria-hidden>
+                    {scaleDots(g.beats)}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="modes-step-wrap">
+              <div className="modes-section-title mb-1">Grille (clic = changement d’accord)</div>
+              <div className="modes-step-grid" style={{ gridTemplateColumns: `repeat(${STEPS_PER_BAR}, minmax(0, 1fr))` }}>
+                {stepState.hits.map((on, i) => {
+                  const beatInBar = i % STEPS_PER_BAR
+                  const isBarStart = beatInBar === 0
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className={`modes-step ${on ? 'is-on' : ''} ${isBarStart ? 'is-bar' : ''}`}
+                      title={i === 0 ? 'Départ (fixe)' : on ? 'Retirer' : 'Ajouter un coup'}
+                      onClick={() => toggleStep(i)}
                     />
-                    <div className="text-[10px] text-[var(--muted)] mt-1 truncate">
-                      {preview.length ? preview.join(' · ') : 'Choisis une évolution à gauche'}
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
+              <p className="text-[10px] text-[var(--muted)] mt-1.5">
+                16 pas / mesure · le 1er pas reste allumé · choisis un groove ou peaufine ici
+              </p>
             </div>
+          </div>
 
-            <div className="modes-footer">
-              {status && <span className="text-[11px] text-[var(--muted)]">{status}</span>}
-              <button type="button" className="btn btn-accent" onClick={applyToProject}>
-                Appliquer → Piano
-              </button>
-            </div>
-          </section>
-        </div>
+          <div className="flex items-center justify-between gap-2 mb-2 mt-3">
+            <div className="modes-section-title mb-0">Structure du morceau</div>
+            <button type="button" className="btn btn-compact" onClick={addSection}>
+              + Section
+            </button>
+          </div>
+
+          <div className="modes-struct-list">
+            {sections.map((sec) => {
+              const selected = activeSectionId === sec.id
+              const preview = resolveSectionChords(sec, key)
+              return (
+                <div
+                  key={sec.id}
+                  className={`modes-sec ${selected ? 'is-active' : ''}`}
+                  onClick={() => setActiveSectionId(sec.id)}
+                >
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={sec.kind}
+                      onChange={(e) => updateSection(sec.id, { kind: e.target.value as SectionKind })}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {SECTION_KINDS.map((k) => (
+                        <option key={k} value={k}>
+                          {SECTION_LABELS[k]}
+                        </option>
+                      ))}
+                    </select>
+                    <label className="flex items-center gap-1 text-[10px] text-[var(--muted)]">
+                      Mesures
+                      <input
+                        type="number"
+                        className="mono w-12"
+                        min={1}
+                        max={32}
+                        value={sec.bars}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) =>
+                          updateSection(sec.id, { bars: Math.max(1, Number(e.target.value) || 1) })
+                        }
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="btn btn-compact ml-auto"
+                      title="Supprimer"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        removeSection(sec.id)
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <textarea
+                    className="modes-sec-chords mono"
+                    rows={2}
+                    placeholder="Cmaj9 A7(b9) Dm9 …"
+                    value={sec.customChords}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      updateSection(sec.id, {
+                        customChords: e.target.value,
+                        progressionId: null,
+                      })
+                    }
+                  />
+                  <div className="text-[10px] text-[var(--muted)] mt-1 truncate">
+                    {preview.length ? preview.join(' · ') : 'Choisis une évolution à gauche'}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
       </div>
-    </div>,
-    document.body,
+    </div>
   )
+}
+
+function scaleDots(beats: number[]) {
+  return beats.map((b, i) => (
+    <span key={i} className="modes-groove-dot" style={{ flexGrow: b, flexBasis: 0 }} />
+  ))
 }

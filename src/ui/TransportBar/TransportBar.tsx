@@ -6,7 +6,6 @@ import { togglePlay, stopTransport } from '@/ui/hooks/useTransport'
 import { saveProjectToFile, loadProjectFromFile } from '@/project/io'
 import { exportProjectMp3, exportProjectWav } from '@/audio/export'
 import { WhistleRecorder } from '@/audio/whistleToMidi'
-import { ModesPanel } from '@/ui/ModesPanel/ModesPanel'
 import { THEME_IDS, THEME_LABELS, applyTheme, getStoredTheme } from '@/ui/theme'
 import { TRACK_COLORS, uid } from '@/types/project'
 
@@ -28,6 +27,8 @@ export function TransportBar() {
   const setMetronome = useDawStore((s) => s.setMetronome)
   const metronome = useDawStore((s) => s.metronome)
   const setPianoRollOpen = useDawStore((s) => s.setPianoRollOpen)
+  const mainView = useDawStore((s) => s.mainView)
+  const setMainView = useDawStore((s) => s.setMainView)
   const setName = useDawStore((s) => s.setName)
   const newProject = useDawStore((s) => s.newProject)
   const loadDemo = useDawStore((s) => s.loadDemo)
@@ -44,7 +45,6 @@ export function TransportBar() {
   const [exporting, setExporting] = useState(false)
   const [whistleRecording, setWhistleRecording] = useState(false)
   const [whistleStatus, setWhistleStatus] = useState('')
-  const [modesOpen, setModesOpen] = useState(false)
   const whistleRef = useRef(new WhistleRecorder())
   const closeTimer = useRef(0)
   const triggerRef = useRef(null as HTMLDivElement | null)
@@ -290,9 +290,9 @@ export function TransportBar() {
 
       <button
         type="button"
-        className={`btn btn-accent shrink-0 ${modesOpen ? 'btn-active' : ''}`}
-        title="Modes & structure — progressions d'accords"
-        onClick={() => setModesOpen(true)}
+        className={`btn btn-accent shrink-0 ${mainView === 'modes' ? 'btn-active' : ''}`}
+        title="Onglet Modes & structure"
+        onClick={() => setMainView(mainView === 'modes' ? 'arrange' : 'modes')}
       >
         Modes & structure
       </button>
@@ -428,7 +428,6 @@ export function TransportBar() {
           </div>,
           document.body,
         )}
-      <ModesPanel open={modesOpen} onClose={() => setModesOpen(false)} />
     </header>
   )
 }

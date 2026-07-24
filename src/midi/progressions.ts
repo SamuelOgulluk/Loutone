@@ -339,6 +339,80 @@ export function evolutionDegreesLabel(evo: ModeEvolution) {
   return evo.degrees.join(' – ')
 }
 
+export type GroovePreset = {
+  id: string
+  label: string
+  feel: string
+  category: 'simple' | 'groovy'
+  // Écrits pour une grille 4/4 ; redimensionnés à la mesure courante
+  beats: number[]
+}
+
+export const GROOVE_PRESETS: GroovePreset[] = [
+  { id: 'ronde', label: 'Ronde', feel: '1 / mesure', category: 'simple', beats: [4] },
+  { id: 'blanches', label: '2 blanches', feel: 'Stable', category: 'simple', beats: [2, 2] },
+  { id: 'noires', label: '4 noires', feel: 'Carré', category: 'simple', beats: [1, 1, 1, 1] },
+  { id: 'croches', label: '8 croches', feel: 'Serré', category: 'simple', beats: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5] },
+  { id: 'triolets', label: 'Triolets', feel: '3 / mesure', category: 'simple', beats: [4 / 3, 4 / 3, 4 / 3] },
+  { id: 'charleston', label: 'Charleston', feel: 'Long–court', category: 'groovy', beats: [1.5, 0.5, 1.5, 0.5] },
+  { id: 'tresillo', label: 'Tresillo', feel: 'Afro-cubain', category: 'groovy', beats: [1.5, 1.5, 1] },
+  { id: 'push', label: 'Push syncopé', feel: 'Anticipé', category: 'groovy', beats: [0.5, 1.5, 0.5, 1.5] },
+  { id: 'boom-bap', label: 'Boom-bap', feel: 'Hip-hop', category: 'groovy', beats: [1.5, 0.5, 2] },
+  { id: 'neo-stab', label: 'Neo-soul stabs', feel: 'Coups secs', category: 'groovy', beats: [0.5, 1.5, 0.5, 1.5] },
+  { id: 'clave', label: 'Clavé 3–2', feel: 'Latin (2 mes.)', category: 'groovy', beats: [1.5, 1, 1.5, 1, 1, 2] },
+  { id: 'offbeat', label: 'Contretemps', feel: 'Skank / reggae', category: 'groovy', beats: [0.5, 1, 0.5, 1, 0.5, 0.5] },
+  { id: 'half-late', label: 'Half-time late', feel: 'Retardé', category: 'groovy', beats: [2.5, 1.5] },
+  { id: 'swing-pairs', label: 'Swing pairs', feel: 'Ternaire léger', category: 'groovy', beats: [1.33, 0.67, 1.33, 0.67] },
+  { id: 'skip', label: 'Skip groove', feel: 'House skip', category: 'groovy', beats: [1, 0.5, 0.5, 1, 0.5, 0.5] },
+  { id: 'bossa', label: 'Bossa pulse', feel: 'Soft syncopé', category: 'groovy', beats: [1, 1.5, 0.5, 1] },
+  { id: 'train', label: 'Train groove', feel: 'Avance croche', category: 'groovy', beats: [0.75, 0.75, 0.5, 0.75, 0.75, 0.5] },
+  { id: 'stutter', label: 'Stutter', feel: 'Dembow light', category: 'groovy', beats: [0.75, 0.25, 1, 0.75, 0.25, 1] },
+]
+
+export function getGroove(id: string) {
+  return GROOVE_PRESETS.find((g) => g.id === id) ?? GROOVE_PRESETS[0]
+}
+
+export function scaleGrooveBeats(beats: number[], beatsPerBar: number) {
+  const sum = beats.reduce((a, b) => a + b, 0) || 4
+  const bars = Math.max(1, Math.round(sum / 4))
+  const scale = (beatsPerBar * bars) / sum
+  return beats.map((b) => Math.round(b * scale * 1000) / 1000)
+}
+
+export function grooveToCells(groove: GroovePreset, beatsPerBar: number): RhythmCell[] {
+  return scaleGrooveBeats(groove.beats, beatsPerBar).map((b) => makeRhythmCell(b))
+}
+
+export function cellsToStepHits(cells: RhythmCell[], beatsPerBar: number, stepsPerBar = 16) {
+  const totalBeats = Math.max(rhythmPatternTotal(cells), beatsPerBar)
+  const bars = Math.max(1, Math.round(totalBeats / beatsPerBar))
+  const totalSteps = stepsPerBar * bars
+  const hits = Array.from({ length: totalSteps }, () => false)
+  hits[0] = true
+  let t = 0
+  for (let i = 0; i < cells.length - 1; i++) {
+    t += cells[i].beats
+    const step = Math.min(totalSteps - 1, Math.round((t / (beatsPerBar * bars)) * totalSteps))
+    hits[step] = true
+  }
+  return { hits, bars, stepsPerBar }
+}
+
+export function stepHitsToCells(hits: boolean[], beatsPerBar: number, stepsPerBar = 16) {
+  const indices = hits.map((on, i) => (on ? i : -1)).filter((i) => i >= 0)
+  if (!indices.length) return defaultRhythmPattern(beatsPerBar)
+  const totalSteps = hits.length
+  const stepBeat = beatsPerBar / stepsPerBar
+  const beats: number[] = []
+  for (let i = 0; i < indices.length; i++) {
+    const a = indices[i]
+    const b = i + 1 < indices.length ? indices[i + 1] : indices[0] + totalSteps
+    beats.push(Math.max(stepBeat, (b - a) * stepBeat))
+  }
+  return beats.map((b) => makeRhythmCell(Math.round(b * 1000) / 1000))
+}
+
 export type ChordRhythmId =
   | 'whole'
   | 'half'

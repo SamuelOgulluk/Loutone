@@ -69,6 +69,7 @@ type DawState = {
   swingAmount: number
   zoom: number
   pianoRollOpen: boolean
+  mainView: 'arrange' | 'modes'
   metronome: boolean
   meters: Record<string, number>
   automationTarget: AutomationTargetMode
@@ -85,6 +86,7 @@ type DawState = {
   setQuantize: (division: QuantizeDivision, strength?: number) => void
   setSwing: (amount: number) => void
   setPianoRollOpen: (open: boolean) => void
+  setMainView: (view: 'arrange' | 'modes') => void
   setMetronome: (on: boolean) => void
   setSelection: (sel: Partial<Selection>) => void
   selectClips: (clipIds: string[], trackId?: string | null, focusClipId?: string | null) => void
@@ -308,6 +310,7 @@ export const useDawStore = create<DawState>((set, get) => ({
   swingAmount: 0,
   zoom: 48,
   pianoRollOpen: true,
+  mainView: 'arrange',
   metronome: false,
   meters: {},
   automationTarget: 'volume',
@@ -363,6 +366,7 @@ export const useDawStore = create<DawState>((set, get) => ({
     set({ quantizeDivision: division, quantizeStrength: strength ?? get().quantizeStrength }),
   setSwing: (amount) => set({ swingAmount: Math.max(0, Math.min(1, amount)) }),
   setPianoRollOpen: (open) => set({ pianoRollOpen: open }),
+  setMainView: (view) => set({ mainView: view }),
   setMetronome: (on) => {
     set({ metronome: on })
     audioEngine.setMetronome(on)
