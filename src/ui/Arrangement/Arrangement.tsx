@@ -847,6 +847,7 @@ export function Arrangement() {
                       clip={clip}
                       kind="midi"
                       zoom={zoom}
+                      compact={track.height <= TRACK_COMPACT_H + 8}
                       selected={selectedSet.has(clip.id)}
                       onSelectPointerDown={(e) => {
                         e.stopPropagation()
@@ -882,6 +883,7 @@ export function Arrangement() {
                       clip={clip}
                       kind="audio"
                       zoom={zoom}
+                      compact={track.height <= TRACK_COMPACT_H + 8}
                       selected={selectedSet.has(clip.id)}
                       onSelectPointerDown={(e) => {
                         e.stopPropagation()
@@ -971,6 +973,7 @@ function ArrangementClip({
   clip,
   kind,
   zoom,
+  compact,
   selected,
   onSelectPointerDown,
   onResizeDown,
@@ -981,6 +984,7 @@ function ArrangementClip({
   clip: MidiClip | AudioClip
   kind: 'midi' | 'audio'
   zoom: number
+  compact?: boolean
   selected: boolean
   onSelectPointerDown: (e: PointerEvent<HTMLDivElement>) => void
   onResizeDown: (e: PointerEvent<HTMLDivElement>) => void
@@ -990,11 +994,17 @@ function ArrangementClip({
   const loopLen = clipLoopLength(clip)
   const iterations = Math.max(1, Math.ceil(clip.duration / loopLen))
   const mix = kind === 'midi' ? 55 : 45
+  const label =
+    compact && clip.name && clip.name !== track.name
+      ? `${track.name} · ${clip.name}`
+      : compact
+        ? track.name
+        : clip.name
 
   return (
     <div
       data-clip
-      className={`arr-clip absolute top-1 bottom-1 rounded-sm overflow-hidden cursor-grab ${selected ? 'arr-clip-selected' : ''}`}
+      className={`arr-clip absolute rounded-sm overflow-hidden cursor-grab ${compact ? 'arr-clip-compact top-px bottom-px' : 'top-1 bottom-1'} ${selected ? 'arr-clip-selected' : ''}`}
       style={{
         left: clip.start * zoom,
         width: Math.max(8, clip.duration * zoom),
@@ -1017,10 +1027,20 @@ function ArrangementClip({
             style={{ left: (i + 1) * loopLen * zoom }}
           />
         ))}
-      <div className="px-1 pt-1.5 text-[10px] truncate relative z-[1]">{clip.name}</div>
       {kind === 'midi' && (
-        <MiniNotes notes={(clip as MidiClip).notes} duration={clip.duration} loopLength={loopLen} />
+        <MiniNotes
+          notes={(clip as MidiClip).notes}
+          duration={clip.duration}
+          loopLength={loopLen}
+          dense={Boolean(compact)}
+        />
       )}
+      <div
+        className={`arr-clip-label relative z-[1] truncate ${compact ? 'arr-clip-label-compact' : ''}`}
+        title={label}
+      >
+        {label}
+      </div>
       <div
         className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize bg-black/20 z-[2]"
         onPointerDown={onResizeDown}
@@ -1033,10 +1053,12 @@ function MiniNotes({
   notes,
   duration,
   loopLength,
+  dense,
 }: {
   notes: { start: number; pitch: number; duration: number }[]
   duration: number
   loopLength: number
+  dense?: boolean
 }) {
   if (!notes.length) return null
   const minP = Math.min(...notes.map((n) => n.pitch))
@@ -1058,17 +1080,21 @@ function MiniNotes({
       })
     }
   }
+  const noteH = dense ? 3 : 2
+  const ySpan = dense ? 92 : 80
   return (
-    <div className="absolute inset-x-0 bottom-0 top-4 opacity-70 pointer-events-none">
-      {drawn.slice(0, 160).map((n) => (
+    <div
+      className={`absolute inset-x-0 pointer-events-none ${dense ? 'inset-y-0 opacity-90' : 'bottom-0 top-4 opacity-70'}`}
+    >
+      {drawn.slice(0, dense ? 280 : 160).map((n) => (
         <div
           key={n.key}
-          className="absolute bg-[var(--text)]/50 rounded-[1px]"
+          className="absolute bg-[var(--text)]/65 rounded-[1px]"
           style={{
             left: `${(n.start / duration) * 100}%`,
-            width: `${Math.max(1, (n.duration / duration) * 100)}%`,
-            bottom: `${((n.pitch - minP) / range) * 80}%`,
-            height: 2,
+            width: `${Math.max(0.8, (n.duration / duration) * 100)}%`,
+            bottom: `${((n.pitch - minP) / range) * ySpan}%`,
+            height: noteH,
           }}
         />
       ))}
