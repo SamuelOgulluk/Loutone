@@ -1,7 +1,8 @@
 import type { Project, Track } from '@/types/project'
 import { clipLoopLength } from '@/types/project'
 import { beatsToSeconds } from '@/midi/notes'
-import { getInstrument } from '@/instruments'
+import { parseChord } from '@/midi/chords'
+import { getInstrument, type VoiceHandle } from '@/instruments'
 import {
   findLane,
   interpolateAutomation,
@@ -47,6 +48,7 @@ export class AudioEngine {
   private freeMetroTimer: number | null = null
   private freeMetroNext = 0
   private freeMetroBeat = 0
+  private previewHandles: VoiceHandle[] = []
 
   async init() {
     if (this.ctx) return
@@ -553,6 +555,44 @@ export class AudioEngine {
 
   getMasterPeak() {
     return this.masterPeak
+  }
+
+  stopPreview() {
+    for (const h of this.previewHandles) {
+      try {
+        h.stop()
+      } catch {
+        /* */
+      }
+    }
+    this.previewHandles = []
+  }
+
+  // Joue une suite d'accords (preview Modes) sans toucher au transport
+  async previewChordProgression(
+    chordNames: string[],
+    opts: { chordSec?: number; octave?: number; instrumentId?: string; velocity?: number } = {},
+  ) {
+    await this.resume()
+    if (!this.ctx || !this.master || !chordNames.length) return
+    this.stopPreview()
+    const inst = getInstrument(opts.instrumentId ?? 'piano')
+    if (!inst) return
+    const chordSec = opts.chordSec ?? 0.7
+    const gap = 0.06
+    const octave = opts.octave ?? 3
+    const velocity = opts.velocity ?? 90
+    const t0 = this.ctx.currentTime + 0.04
+    chordNames.forEach((name, i) => {
+      const parsed = parseChord(name, octave)
+      if (!parsed) return
+      const when = t0 + i * (chordSec + gap)
+      for (const pitch of parsed.pitches) {
+        this.previewHandles.push(
+          inst.createVoice(this.ctx!, this.master!, pitch, velocity, when, chordSec * 0.9),
+        )
+      }
+    })
   }
 
   async exportWav() {
