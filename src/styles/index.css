@@ -380,6 +380,19 @@ body.is-splitting-col * {
   border-radius: 3px;
 }
 
+.arr-track-head.is-compact .arr-track-meta,
+.arr-track-head.is-compact .arr-fx-chips {
+  display: none;
+}
+.arr-track-head.is-compact .w-1 {
+  margin-top: 0.15rem;
+  margin-bottom: 0.15rem;
+}
+.arr-track-head.is-compact .text-xs {
+  font-size: 11px;
+  line-height: 1;
+}
+
 .arr-auto-mode {
   flex: 1;
   min-width: 0;
