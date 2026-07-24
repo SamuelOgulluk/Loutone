@@ -282,6 +282,68 @@ input[type="range"]::-moz-range-thumb {
   border-bottom: 1px solid var(--line);
 }
 
+.split {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+.split-row {
+  flex-direction: row;
+}
+.split-column {
+  flex-direction: column;
+}
+.split-pane {
+  min-width: 0;
+  min-height: 0;
+}
+.split-handle {
+  flex: 0 0 6px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  position: relative;
+  z-index: 5;
+}
+.split-handle::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 80%, transparent);
+  transition: background 120ms ease, inset 120ms ease;
+}
+.split-handle:hover::after,
+.split-handle:focus-visible::after {
+  background: var(--accent);
+  inset: 0;
+}
+.split-handle-row {
+  cursor: col-resize;
+  margin: 0 1px;
+  align-self: stretch;
+}
+.split-handle-column {
+  cursor: row-resize;
+  margin: 1px 0;
+  align-self: stretch;
+  flex: 0 0 6px;
+  width: auto;
+}
+body.is-splitting-row,
+body.is-splitting-row * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+body.is-splitting-col,
+body.is-splitting-col * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -837,21 +899,16 @@ input[type="range"]::-moz-range-thumb {
   flex-shrink: 0;
 }
 .modes-workspace-body {
-  display: grid;
-  grid-template-columns: minmax(280px, 0.95fr) minmax(0, 1.15fr);
-  gap: 0;
   min-height: 0;
-  flex: 1;
-  overflow: hidden;
 }
 .modes-lib,
 .modes-struct {
   min-height: 0;
   overflow: auto;
   padding: 0.75rem;
+  height: 100%;
 }
 .modes-lib {
-  border-right: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg-1) 80%, transparent);
 }
 .modes-keybar {
@@ -1031,14 +1088,4 @@ input[type="range"]::-moz-range-thumb {
 }
 .modes-step:hover {
   border-color: var(--accent);
-}
-@media (max-width: 900px) {
-  .modes-workspace-body {
-    grid-template-columns: 1fr;
-  }
-  .modes-lib {
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-    max-height: 42vh;
-  }
 }

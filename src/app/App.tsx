@@ -6,6 +6,7 @@ import { PianoRoll } from '@/ui/MidiEditor/PianoRoll'
 import { Mixer } from '@/ui/Mixer/Mixer'
 import { Inspector } from '@/ui/Inspector/Inspector'
 import { ModesPanel } from '@/ui/ModesPanel/ModesPanel'
+import { Split } from '@/ui/layout/Split'
 import { useDawStore } from '@/store/useDawStore'
 import { useKeyboardShortcuts, useTransportClock } from '@/ui/hooks/useTransport'
 import { audioEngine } from '@/audio/engine'
@@ -50,29 +51,47 @@ export function App() {
           <ModesPanel />
         </div>
       ) : (
-        <div className="flex-1 min-h-0 min-w-0 w-full overflow-hidden grid grid-cols-[200px_minmax(0,1fr)_260px] gap-2">
-          <div className="min-h-0 min-w-0 overflow-hidden">
-            <Browser />
-          </div>
-          <div className="min-h-0 min-w-0 overflow-hidden flex flex-col gap-2">
-            <div className={pianoRollOpen ? 'h-[48%] min-h-0 min-w-0 overflow-hidden' : 'flex-1 min-h-0 min-w-0 overflow-hidden'}>
-              <Arrangement />
-            </div>
-            {pianoRollOpen && (
-              <div className="h-[52%] min-h-0 min-w-0 overflow-hidden">
+        <Split
+          className="flex-1 min-h-0 min-w-0"
+          axis="row"
+          mode="sides-px"
+          storageKey="arrange-main"
+          initial={[200, 260]}
+          min={[140, 180]}
+          max={[420, 480]}
+        >
+          <Browser />
+          <div className="h-full min-h-0 min-w-0 overflow-hidden">
+            {pianoRollOpen ? (
+              <Split
+                className="h-full"
+                axis="column"
+                mode="percent"
+                storageKey="arrange-center"
+                initial={[48, 52]}
+                min={[25, 25]}
+                max={[75, 75]}
+              >
+                <Arrangement />
                 <PianoRoll />
-              </div>
+              </Split>
+            ) : (
+              <Arrangement />
             )}
           </div>
-          <div className="min-h-0 min-w-0 overflow-hidden flex flex-col gap-2">
-            <div className="flex-[3] min-h-0 min-w-0 overflow-hidden">
-              <Inspector />
-            </div>
-            <div className="flex-[2] min-h-0 min-w-0 overflow-hidden">
-              <Mixer />
-            </div>
-          </div>
-        </div>
+          <Split
+            className="h-full"
+            axis="column"
+            mode="percent"
+            storageKey="arrange-right"
+            initial={[60, 40]}
+            min={[25, 20]}
+            max={[80, 75]}
+          >
+            <Inspector />
+            <Mixer />
+          </Split>
+        </Split>
       )}
     </div>
   )

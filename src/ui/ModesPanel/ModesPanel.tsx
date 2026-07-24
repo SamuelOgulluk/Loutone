@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { TRACK_COLORS, uid } from '@/types/project'
+import { Split } from '@/ui/layout/Split'
 import {
   DEFAULT_KEY,
   GROOVE_PRESETS,
@@ -263,8 +264,16 @@ export function ModesPanel() {
         </div>
       </header>
 
-      <div className="modes-workspace-body">
-        <aside className="modes-lib">
+      <Split
+        className="modes-workspace-body flex-1 min-h-0"
+        axis="row"
+        mode="percent"
+        storageKey="modes-main"
+        initial={[46, 54]}
+        min={[28, 32]}
+        max={[70, 72]}
+      >
+        <aside className="modes-lib h-full">
           <div className="modes-keybar">
             <div className="modes-section-title mb-0">Tonalité</div>
             <div className="modes-key-controls">
@@ -331,7 +340,7 @@ export function ModesPanel() {
           </div>
         </aside>
 
-        <section className="modes-struct">
+        <section className="modes-struct h-full">
           <div className="modes-groove-block">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="modes-section-title mb-0">Groove des accords</div>
@@ -475,7 +484,7 @@ export function ModesPanel() {
             })}
           </div>
         </section>
-      </div>
+      </Split>
     </div>
   )
 }
