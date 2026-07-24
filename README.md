@@ -1,6 +1,6 @@
-# Lutra — DAW local
+# Loutone — DAW local
 
-Application DAW desktop locale (Tauri 2 + Vite + React + Web Audio). Nom du genre des loutres (*Lutra*). Pas d'IA en V1.
+Application DAW desktop locale (Tauri 2 + Vite + React + Web Audio). Nom inspiré des loutres + du son (*tone*). Pas d'IA en V1.
 
 **Demo en ligne :** https://samuelogulluk.github.io/lutra/
 

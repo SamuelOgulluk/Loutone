@@ -222,9 +222,9 @@ export function TransportBar() {
   return (
     <header className="panel flex items-center gap-3 px-3 py-2 overflow-visible">
       <div className="flex items-center gap-2 pr-3 border-r border-[var(--line)]">
-        <span className="inline-flex items-center gap-1.5 text-[var(--accent)]" title="Lutra">
-          <img src={`${import.meta.env.BASE_URL}lutra.svg`} alt="" width={24} height={24} className="shrink-0 rounded-[6px]" />
-          <span className="text-xl font-semibold tracking-tight">Lutra</span>
+        <span className="inline-flex items-center gap-1.5 text-[var(--accent)]" title="Loutone">
+          <img src={`${import.meta.env.BASE_URL}loutone.svg`} alt="" width={24} height={24} className="shrink-0 rounded-[6px]" />
+          <span className="text-xl font-semibold tracking-tight">Loutone</span>
         </span>
         <input
           className="bg-transparent border-none text-sm text-[var(--muted)] w-36"

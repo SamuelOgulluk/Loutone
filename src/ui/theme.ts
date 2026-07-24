@@ -41,7 +41,7 @@ export function applyTheme(themeId: string) {
   } catch {
     // ignore
   }
-  window.dispatchEvent(new CustomEvent('lutra-theme', { detail: id }))
+  window.dispatchEvent(new CustomEvent('loutone-theme', { detail: id }))
   return id
 }
 
