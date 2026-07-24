@@ -10,6 +10,7 @@ import {
   SECTION_KINDS,
   SECTION_LABELS,
   cellsToStepHits,
+  chordIndexForHit,
   chordsToMidiNotes,
   defaultStructure,
   evolutionChords,
@@ -69,14 +70,16 @@ export function ModesPanel() {
 
   const previewEvolution = (evo: ModeEvolution, pattern = patternBeats, keyOverride = key) => {
     const chords = evolutionChords(evo, keyOverride)
+    if (!chords.length) return
     const slots = pattern.length ? pattern : [beatsPerBar]
-    const chordSecs = chords.map((_, i) => {
-      const beats = slots[i % slots.length]
-      return Math.max(0.45, (beats * 60) / Math.max(40, project.bpm) * 1.25)
-    })
-    void audioEngine.previewChordProgression(chords, {
+    // Un cycle de grille = une passe des accords (coups en trop = re-attaque)
+    const names = slots.map((_, i) => chords[chordIndexForHit(i, slots.length, chords.length)])
+    const chordSecs = slots.map((beats) =>
+      Math.max(0.35, (beats * 60) / Math.max(40, project.bpm) * 1.25),
+    )
+    void audioEngine.previewChordProgression(names, {
       chordSecs,
-      gapSec: 0.06,
+      gapSec: 0.03,
       octave: 3,
       instrumentId: 'piano',
     })
@@ -391,7 +394,7 @@ export function ModesPanel() {
                 })}
               </div>
               <p className="text-[10px] text-[var(--muted)] mt-1.5">
-                16 pas / mesure · le 1er pas reste allumé · choisis un groove ou peaufine ici
+                16 pas / mesure · un cycle = une passe de la grille (sans recommencer les accords au milieu)
               </p>
             </div>
           </div>
