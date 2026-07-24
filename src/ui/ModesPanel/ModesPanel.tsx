@@ -9,12 +9,17 @@ import {
   SECTION_KINDS,
   SECTION_LABELS,
   chordsToMidiNotes,
+  defaultRhythmPattern,
   defaultStructure,
-  getChordRhythm,
   getEvolution,
+  makeRhythmCell,
   resolveSectionChords,
+  rhythmNoteLabel,
+  rhythmPatternFromPreset,
+  rhythmPatternTotal,
   type ChordRhythmId,
   type ModeEvolution,
+  type RhythmCell,
   type SectionKind,
   type StructureSection,
 } from '@/midi/progressions'
@@ -34,10 +39,12 @@ export function ModesPanel({ open, onClose }: Props) {
   const setLoop = useDawStore((s) => s.setLoop)
   const setProject = useDawStore((s) => s.setProject)
 
+  const beatsPerBar = project.timeSignature.numerator
   const [sections, setSections] = useState(defaultStructure)
   const [selectedEvo, setSelectedEvo] = useState(MODE_EVOLUTIONS[3]?.id ?? MODE_EVOLUTIONS[0].id)
   const [activeSectionId, setActiveSectionId] = useState(sections[1]?.id ?? sections[0].id)
-  const [rhythmId, setRhythmId] = useState('whole' as ChordRhythmId)
+  const [rhythmCells, setRhythmCells] = useState(() => defaultRhythmPattern(4))
+  const [selectedCellId, setSelectedCellId] = useState('')
   const [status, setStatus] = useState('')
 
   const evolutions = useMemo(
@@ -45,9 +52,9 @@ export function ModesPanel({ open, onClose }: Props) {
     [],
   )
 
-  const rhythm = getChordRhythm(rhythmId)
-  const beatsPerBar = project.timeSignature.numerator
-  const beatsPerChord = rhythm.beatsFor(beatsPerBar)
+  const patternBeats = useMemo(() => rhythmCells.map((c) => c.beats), [rhythmCells])
+  const patternTotal = rhythmPatternTotal(rhythmCells)
+  const patternBars = Math.max(1, Math.ceil(patternTotal / Math.max(1, beatsPerBar) - 0.001))
 
   useEffect(() => {
     if (!open) audioEngine.stopPreview()
@@ -60,17 +67,28 @@ export function ModesPanel({ open, onClose }: Props) {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
 
-  const previewEvolution = (evo: ModeEvolution, rhythmOverride?: ChordRhythmId) => {
-    const r = getChordRhythm(rhythmOverride ?? rhythmId)
-    const beats = r.beatsFor(beatsPerBar)
-    // Preview un peu plus lente que le tempo projet (~×1.25)
-    const chordSec = Math.max(0.55, (beats * 60) / Math.max(40, project.bpm) * 1.25)
+  const previewEvolution = (evo: ModeEvolution, pattern = patternBeats) => {
+    const slots = pattern.length ? pattern : [beatsPerBar]
+    const chordSecs = evo.chords.map((_, i) => {
+      const beats = slots[i % slots.length]
+      return Math.max(0.45, (beats * 60) / Math.max(40, project.bpm) * 1.25)
+    })
     void audioEngine.previewChordProgression(evo.chords, {
-      chordSec,
-      gapSec: 0.08,
+      chordSecs,
+      gapSec: 0.06,
       octave: 3,
       instrumentId: 'piano',
     })
+  }
+
+  const setPattern = (cells: RhythmCell[], replay = true) => {
+    const next = cells.length ? cells : defaultRhythmPattern(beatsPerBar)
+    setRhythmCells(next)
+    if (!next.find((c) => c.id === selectedCellId)) setSelectedCellId(next[0]?.id ?? '')
+    if (replay) {
+      const evo = getEvolution(selectedEvo)
+      if (evo) previewEvolution(evo, next.map((c) => c.beats))
+    }
   }
 
   const assignEvoToActive = (evo: ModeEvolution) => {
@@ -85,10 +103,42 @@ export function ModesPanel({ open, onClose }: Props) {
     previewEvolution(evo)
   }
 
-  const onRhythmChange = (id: ChordRhythmId) => {
-    setRhythmId(id)
-    const evo = getEvolution(selectedEvo)
-    if (evo) previewEvolution(evo, id)
+  const appendNote = (beats: number) => {
+    setPattern([...rhythmCells, makeRhythmCell(beats)])
+  }
+
+  const appendTriplet = () => {
+    const unit = beatsPerBar / 3
+    setPattern([...rhythmCells, makeRhythmCell(unit), makeRhythmCell(unit), makeRhythmCell(unit)])
+  }
+
+  const loadPreset = (id: ChordRhythmId) => {
+    setPattern(rhythmPatternFromPreset(id, beatsPerBar))
+  }
+
+  const removeSelectedCell = () => {
+    if (rhythmCells.length <= 1) return
+    setPattern(rhythmCells.filter((c) => c.id !== selectedCellId))
+  }
+
+  const splitSelectedCell = () => {
+    const idx = rhythmCells.findIndex((c) => c.id === selectedCellId)
+    if (idx < 0) return
+    const cell = rhythmCells[idx]
+    if (cell.beats < 0.5) return
+    const half = cell.beats / 2
+    const next = [...rhythmCells]
+    next.splice(idx, 1, makeRhythmCell(half), makeRhythmCell(half))
+    setSelectedCellId(next[idx].id)
+    setPattern(next)
+  }
+
+  const nudgeSelected = (factor: number) => {
+    const idx = rhythmCells.findIndex((c) => c.id === selectedCellId)
+    if (idx < 0) return
+    const beats = Math.max(0.25, Math.round(rhythmCells[idx].beats * factor * 4) / 4)
+    const next = rhythmCells.map((c, i) => (i === idx ? { ...c, beats } : c))
+    setPattern(next)
   }
 
   const addSection = () => {
@@ -124,7 +174,7 @@ export function ModesPanel({ open, onClose }: Props) {
       if (!chordNames.length) continue
       const sectionBeats = Math.max(1, section.bars) * beatsPerBar
       const notes = chordsToMidiNotes(chordNames, {
-        beatsPerChord: Math.max(0.25, beatsPerChord),
+        pattern: patternBeats.length ? patternBeats : [beatsPerBar],
         fillBeats: sectionBeats,
         startBeat: 0,
         octave: 3,
@@ -259,21 +309,113 @@ export function ModesPanel({ open, onClose }: Props) {
               </button>
             </div>
 
-            <label className="flex flex-col gap-1 text-[11px] text-[var(--muted)] mb-3">
-              <span>Rythme des accords</span>
-              <select
-                className="modes-rhythm"
-                value={rhythmId}
-                onChange={(e) => onRhythmChange(e.target.value as ChordRhythmId)}
-                title={rhythm.hint}
-              >
+            <div className="modes-score mb-3">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="modes-section-title mb-0">Rythme — partition</div>
+                <span className="text-[10px] text-[var(--muted)] mono">
+                  {patternTotal.toFixed(patternTotal % 1 ? 2 : 0)} temps · {patternBars} mes.
+                </span>
+              </div>
+
+              <div className="modes-score-palette">
+                <button type="button" className="btn btn-compact" title="Ajouter une ronde" onClick={() => appendNote(beatsPerBar)}>
+                  𝅝
+                </button>
+                <button type="button" className="btn btn-compact" title="Ajouter une blanche" onClick={() => appendNote(beatsPerBar / 2)}>
+                  𝅗
+                </button>
+                <button type="button" className="btn btn-compact" title="Ajouter une noire" onClick={() => appendNote(beatsPerBar / 4)}>
+                  ♩
+                </button>
+                <button type="button" className="btn btn-compact" title="Ajouter une croche" onClick={() => appendNote(beatsPerBar / 8)}>
+                  ♪
+                </button>
+                <button type="button" className="btn btn-compact" title="Ajouter un groupe de triolets" onClick={appendTriplet}>
+                  ⅓×3
+                </button>
+                <span className="modes-score-sep" />
+                <button type="button" className="btn btn-compact" title="Couper en deux" onClick={splitSelectedCell}>
+                  ÷2
+                </button>
+                <button type="button" className="btn btn-compact" title="Allonger" onClick={() => nudgeSelected(2)}>
+                  ×2
+                </button>
+                <button type="button" className="btn btn-compact" title="Raccourcir" onClick={() => nudgeSelected(0.5)}>
+                  ×½
+                </button>
+                <button type="button" className="btn btn-compact" title="Supprimer la note" onClick={removeSelectedCell}>
+                  ⌫
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-compact"
+                  title="Effacer la partition"
+                  onClick={() => setPattern(defaultRhythmPattern(beatsPerBar))}
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="modes-score-staff" role="list" aria-label="Partition du rythme">
+                {Array.from({ length: Math.max(0, patternBars - 1) }, (_, bar) => {
+                  const at = (bar + 1) * beatsPerBar
+                  if (at >= patternTotal - 0.01) return null
+                  return (
+                    <div
+                      key={`bar-${bar}`}
+                      className="modes-score-barline"
+                      style={{ left: `${(at / Math.max(patternTotal, 0.25)) * 100}%` }}
+                    />
+                  )
+                })}
+                {rhythmCells.map((cell, i) => {
+                  const meta = rhythmNoteLabel(cell.beats, beatsPerBar)
+                  const active = cell.id === selectedCellId || (!selectedCellId && i === 0)
+                  return (
+                    <button
+                      key={cell.id}
+                      type="button"
+                      role="listitem"
+                      className={`modes-score-note ${active ? 'is-active' : ''}`}
+                      style={{ flexGrow: cell.beats, flexBasis: 0 }}
+                      title={`${meta.name} · ${cell.beats} temps — double-clic pour couper`}
+                      onClick={() => setSelectedCellId(cell.id)}
+                      onDoubleClick={() => {
+                        setSelectedCellId(cell.id)
+                        const half = cell.beats / 2
+                        if (half < 0.25) return
+                        const idx = rhythmCells.findIndex((c) => c.id === cell.id)
+                        if (idx < 0) return
+                        const next = [...rhythmCells]
+                        next.splice(idx, 1, makeRhythmCell(half), makeRhythmCell(half))
+                        setSelectedCellId(next[idx].id)
+                        setPattern(next)
+                      }}
+                    >
+                      <span className="modes-score-glyph">{meta.glyph}</span>
+                      <span className="modes-score-beats mono">
+                        {cell.beats % 1 ? cell.beats.toFixed(2) : cell.beats}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="modes-score-presets">
+                <span className="text-[10px] text-[var(--muted)]">Modèles</span>
                 {CHORD_RHYTHMS.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.label} — {r.hint}
-                  </option>
+                  <button
+                    key={r.id}
+                    type="button"
+                    className="btn btn-compact"
+                    title={r.hint}
+                    onClick={() => loadPreset(r.id)}
+                  >
+                    {r.label}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
 
             <div className="modes-struct-list">
               {sections.map((sec) => {

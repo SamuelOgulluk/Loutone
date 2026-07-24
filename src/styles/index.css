@@ -920,9 +920,88 @@ input[type="range"]::-moz-range-thumb {
   resize: vertical;
   min-height: 2.4rem;
 }
-.modes-rhythm {
-  width: 100%;
-  font-size: 12px;
+.modes-score {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-1) 70%, transparent);
+  padding: 0.55rem 0.6rem 0.65rem;
+}
+.modes-score-palette,
+.modes-score-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+.modes-score-presets {
+  margin-top: 0.45rem;
+}
+.modes-score-sep {
+  width: 1px;
+  height: 1.1rem;
+  background: var(--line);
+  margin: 0 0.15rem;
+}
+.modes-score-staff {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  min-height: 3.4rem;
+  margin-top: 0.55rem;
+  padding: 0.35rem 0.25rem;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 6px,
+      color-mix(in srgb, var(--muted) 28%, transparent) 6px,
+      color-mix(in srgb, var(--muted) 28%, transparent) 7px
+    );
+  overflow: hidden;
+}
+.modes-score-barline {
+  position: absolute;
+  top: 0.2rem;
+  bottom: 0.2rem;
+  width: 2px;
+  margin-left: -1px;
+  background: color-mix(in srgb, var(--text) 55%, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.modes-score-note {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 1.6rem;
+  padding: 0.25rem 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--bg-2) 88%, var(--accent));
+  color: var(--text);
+  cursor: pointer;
+}
+.modes-score-note:hover {
+  border-color: var(--accent);
+}
+.modes-score-note.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.modes-score-glyph {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.modes-score-beats {
+  font-size: 9px;
+  opacity: 0.75;
 }
 .modes-footer {
   display: flex;

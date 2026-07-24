@@ -573,6 +573,7 @@ export class AudioEngine {
     chordNames: string[],
     opts: {
       chordSec?: number
+      chordSecs?: number[]
       gapSec?: number
       octave?: number
       instrumentId?: string
@@ -584,20 +585,24 @@ export class AudioEngine {
     this.stopPreview()
     const inst = getInstrument(opts.instrumentId ?? 'piano')
     if (!inst) return
-    const chordSec = opts.chordSec ?? 1.05
+    const fallbackSec = opts.chordSec ?? 1.05
     const gap = opts.gapSec ?? 0.08
     const octave = opts.octave ?? 3
     const velocity = opts.velocity ?? 90
-    const t0 = this.ctx.currentTime + 0.04
+    let when = this.ctx.currentTime + 0.04
     chordNames.forEach((name, i) => {
       const parsed = parseChord(name, octave)
       if (!parsed) return
-      const when = t0 + i * (chordSec + gap)
+      const chordSec =
+        opts.chordSecs && opts.chordSecs.length
+          ? opts.chordSecs[i % opts.chordSecs.length]
+          : fallbackSec
       for (const pitch of parsed.pitches) {
         this.previewHandles.push(
           inst.createVoice(this.ctx!, this.master!, pitch, velocity, when, chordSec * 0.92),
         )
       }
+      when += chordSec + gap
     })
   }
 
