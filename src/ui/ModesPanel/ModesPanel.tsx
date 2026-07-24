@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useDawStore } from '@/store/useDawStore'
+import { audioEngine } from '@/audio/engine'
 import { TRACK_COLORS, uid } from '@/types/project'
 import {
   MODE_EVOLUTIONS,
@@ -41,10 +42,23 @@ export function ModesPanel({ open, onClose }: Props) {
     [],
   )
 
+  useEffect(() => {
+    if (!open) audioEngine.stopPreview()
+    return () => audioEngine.stopPreview()
+  }, [open])
+
   if (!open) return null
 
   const updateSection = (id: string, patch: Partial<StructureSection>) => {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
+  }
+
+  const previewEvolution = (evo: ModeEvolution) => {
+    void audioEngine.previewChordProgression(evo.chords, {
+      chordSec: Math.min(0.85, Math.max(0.45, 2.8 / Math.max(1, evo.chords.length))),
+      octave: 3,
+      instrumentId: 'piano',
+    })
   }
 
   const assignEvoToActive = (evo: ModeEvolution) => {
@@ -56,6 +70,7 @@ export function ModesPanel({ open, onClose }: Props) {
           : s,
       ),
     )
+    previewEvolution(evo)
   }
 
   const addSection = () => {
@@ -168,7 +183,15 @@ export function ModesPanel({ open, onClose }: Props) {
 
   return createPortal(
     <div className="modes-overlay" role="dialog" aria-modal="true" aria-label="Modes et structure">
-      <button type="button" className="modes-backdrop" aria-label="Fermer" onClick={onClose} />
+      <button
+        type="button"
+        className="modes-backdrop"
+        aria-label="Fermer"
+        onClick={() => {
+          audioEngine.stopPreview()
+          onClose()
+        }}
+      />
       <div className="modes-panel panel">
         <header className="modes-head">
           <div>
@@ -177,7 +200,14 @@ export function ModesPanel({ open, onClose }: Props) {
               Choisis une évolution d’accords, assigne-la aux sections, puis applique en MIDI piano.
             </p>
           </div>
-          <button type="button" className="btn btn-compact" onClick={onClose}>
+          <button
+            type="button"
+            className="btn btn-compact"
+            onClick={() => {
+              audioEngine.stopPreview()
+              onClose()
+            }}
+          >
             Fermer
           </button>
         </header>
@@ -194,7 +224,7 @@ export function ModesPanel({ open, onClose }: Props) {
                     type="button"
                     className={`modes-evo ${active ? 'is-active' : ''}`}
                     onClick={() => assignEvoToActive(evo)}
-                    title="Assigner à la section sélectionnée"
+                    title="Écouter et assigner à la section sélectionnée"
                   >
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="font-medium text-sm">{evo.label}</span>
