@@ -12,6 +12,8 @@ import { AutomationLaneView } from './AutomationLane'
 
 const FX_SHORT = Object.fromEntries(EFFECT_CATALOG.map((e) => [e.type, e.short])) as Record<EffectType, string>
 const FX_TYPES = new Set(EFFECT_CATALOG.map((e) => e.type))
+const TRACK_COMPACT_H = 22
+const TRACK_DEFAULT_H = 64
 
 type LoopDrag =
   | { mode: 'create'; originBeat: number; previewStart: number; previewEnd: number; moved: boolean }
@@ -99,6 +101,7 @@ export function Arrangement() {
   const clipDragRef = useRef<ClipDrag | null>(null)
   const resizeRef = useRef<ClipResize | null>(null)
   const loopStretchRef = useRef<ClipLoopStretch | null>(null)
+  const heightMemoryRef = useRef(new Map<string, number>())
 
   const [loopDrag, setLoopDrag] = useState<LoopDrag | null>(null)
   const [marquee, setMarquee] = useState<MarqueeState | null>(null)
@@ -109,6 +112,17 @@ export function Arrangement() {
   const updateLoopDrag = (next: LoopDrag | null) => {
     loopDragRef.current = next
     setLoopDrag(next)
+  }
+
+  const toggleTrackCompact = (track: Track) => {
+    const compact = track.height <= TRACK_COMPACT_H + 2
+    if (compact) {
+      const prev = heightMemoryRef.current.get(track.id) ?? TRACK_DEFAULT_H
+      updateTrack(track.id, { height: Math.max(TRACK_COMPACT_H + 8, prev) })
+      return
+    }
+    heightMemoryRef.current.set(track.id, track.height)
+    updateTrack(track.id, { height: TRACK_COMPACT_H })
   }
 
   const beats = Math.max(project.lengthBeats, project.loopEnd + 8)
@@ -597,12 +611,14 @@ export function Arrangement() {
           </div>
           {project.tracks.map((track) => {
             const autoOpen = openSet.has(track.id)
+            const compact = track.height <= TRACK_COMPACT_H + 2
             const rowH = track.height + (autoOpen ? AUTOMATION_LANE_H : 0)
             return (
             <div
               key={track.id}
-              className={`arr-track-head flex flex-col border-b border-[var(--line)] ${selection.trackId === track.id ? 'bg-[var(--bg-3)]' : ''} ${fxDropTrackId === track.id ? 'arr-track-drop' : ''}`}
+              className={`arr-track-head flex flex-col border-b border-[var(--line)] ${selection.trackId === track.id ? 'bg-[var(--bg-3)]' : ''} ${fxDropTrackId === track.id ? 'arr-track-drop' : ''} ${compact ? 'is-compact' : ''}`}
               style={{ height: rowH }}
+              title={compact ? 'Double-clic pour agrandir' : 'Double-clic pour compacter'}
               onClick={() =>
                 setSelection({
                   trackId: track.id,
@@ -614,6 +630,11 @@ export function Arrangement() {
                   effectId: null,
                 })
               }
+              onDoubleClick={(e) => {
+                if ((e.target as HTMLElement).closest('button')) return
+                e.preventDefault()
+                toggleTrackCompact(track)
+              }}
               onDragOver={(e) => onTrackFxDragOver(track.id, e)}
               onDragLeave={onTrackFxDragLeave}
               onDrop={(e) => onTrackFxDrop(track.id, e)}
@@ -644,7 +665,7 @@ export function Arrangement() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-1 min-w-0">
+                <div className="arr-track-meta flex items-center gap-1 min-w-0">
                   <span className="text-[10px] text-[var(--muted)] mono truncate flex-1 min-w-0">
                     {track.type === 'midi'
                       ? track.instrumentId
