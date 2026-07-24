@@ -874,6 +874,59 @@ input[type="range"]::-moz-range-thumb {
   border-right: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg-1) 80%, transparent);
 }
+.modes-keybar {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.modes-key-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+.modes-key-tonic {
+  min-width: 4.2rem;
+  font-size: 12px;
+}
+.modes-key-mode {
+  display: flex;
+  gap: 0.25rem;
+}
+.modes-key-badge {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-2));
+  color: var(--accent);
+}
+.modes-genre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+.modes-genre-title {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  opacity: 0.9;
+  padding: 0.15rem 0.1rem;
+}
+.modes-degrees {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.modes-chords {
+  font-size: 10px;
+  opacity: 0.72;
+}
 .modes-section-title {
   font-size: 10px;
   text-transform: uppercase;
