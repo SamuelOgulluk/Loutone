@@ -130,6 +130,39 @@ export function getEvolution(id: string) {
   return MODE_EVOLUTIONS.find((e) => e.id === id) ?? null
 }
 
+export type ChordRhythmId =
+  | 'whole'
+  | 'half'
+  | 'quarter'
+  | 'eighth'
+  | 'triplet'
+  | 'triplet-half'
+
+export type ChordRhythm = {
+  id: ChordRhythmId
+  label: string
+  hint: string
+  beatsFor: (beatsPerBar: number) => number
+}
+
+export const CHORD_RHYTHMS: ChordRhythm[] = [
+  { id: 'whole', label: 'Ronde', hint: '1 accord / mesure', beatsFor: (b) => b },
+  { id: 'half', label: '2 blanches', hint: '2 accords / mesure', beatsFor: (b) => b / 2 },
+  { id: 'quarter', label: '4 noires', hint: '4 accords / mesure', beatsFor: (b) => b / 4 },
+  { id: 'eighth', label: '8 croches', hint: '8 accords / mesure', beatsFor: (b) => b / 8 },
+  { id: 'triplet', label: 'Triolets', hint: '3 accords / mesure', beatsFor: (b) => b / 3 },
+  {
+    id: 'triplet-half',
+    label: 'Triolets de blanches',
+    hint: '3 accords / 2 mesures',
+    beatsFor: (b) => (b * 2) / 3,
+  },
+]
+
+export function getChordRhythm(id: string) {
+  return CHORD_RHYTHMS.find((r) => r.id === id) ?? CHORD_RHYTHMS[0]
+}
+
 export function resolveSectionChords(section: StructureSection) {
   if (section.customChords.trim()) return parseChordList(section.customChords)
   if (section.progressionId) {
@@ -141,13 +174,36 @@ export function resolveSectionChords(section: StructureSection) {
 
 export function chordsToMidiNotes(
   chordNames: string[],
-  opts: { beatsPerChord?: number; octave?: number; velocity?: number; startBeat?: number } = {},
+  opts: {
+    beatsPerChord?: number
+    octave?: number
+    velocity?: number
+    startBeat?: number
+    fillBeats?: number
+  } = {},
 ) {
   const beatsPerChord = opts.beatsPerChord ?? 4
   const octave = opts.octave ?? 3
   const velocity = opts.velocity ?? 82
   const startBeat = opts.startBeat ?? 0
   const notes: MidiNote[] = []
+  if (!chordNames.length || beatsPerChord <= 0) return notes
+
+  if (opts.fillBeats && opts.fillBeats > 0) {
+    let t = startBeat
+    let i = 0
+    const end = startBeat + opts.fillBeats
+    while (t < end - 0.001) {
+      const parsed = parseChord(chordNames[i % chordNames.length], octave)
+      const dur = Math.min(beatsPerChord, end - t)
+      if (parsed && dur > 0.05) notes.push(...chordToNotes(parsed, t, dur * 0.95, velocity))
+      t += beatsPerChord
+      i += 1
+      if (i > 512) break
+    }
+    return notes
+  }
+
   chordNames.forEach((name, i) => {
     const parsed = parseChord(name, octave)
     if (!parsed) return

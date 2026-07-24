@@ -4,13 +4,16 @@ import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { TRACK_COLORS, uid } from '@/types/project'
 import {
+  CHORD_RHYTHMS,
   MODE_EVOLUTIONS,
   SECTION_KINDS,
   SECTION_LABELS,
   chordsToMidiNotes,
   defaultStructure,
+  getChordRhythm,
   getEvolution,
   resolveSectionChords,
+  type ChordRhythmId,
   type ModeEvolution,
   type SectionKind,
   type StructureSection,
@@ -34,13 +37,17 @@ export function ModesPanel({ open, onClose }: Props) {
   const [sections, setSections] = useState(defaultStructure)
   const [selectedEvo, setSelectedEvo] = useState(MODE_EVOLUTIONS[3]?.id ?? MODE_EVOLUTIONS[0].id)
   const [activeSectionId, setActiveSectionId] = useState(sections[1]?.id ?? sections[0].id)
-  const [beatsPerChord, setBeatsPerChord] = useState(4)
+  const [rhythmId, setRhythmId] = useState('whole' as ChordRhythmId)
   const [status, setStatus] = useState('')
 
   const evolutions = useMemo(
     () => [...MODE_EVOLUTIONS].sort((a, b) => a.order - b.order),
     [],
   )
+
+  const rhythm = getChordRhythm(rhythmId)
+  const beatsPerBar = project.timeSignature.numerator
+  const beatsPerChord = rhythm.beatsFor(beatsPerBar)
 
   useEffect(() => {
     if (!open) audioEngine.stopPreview()
@@ -53,9 +60,14 @@ export function ModesPanel({ open, onClose }: Props) {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
 
-  const previewEvolution = (evo: ModeEvolution) => {
+  const previewEvolution = (evo: ModeEvolution, rhythmOverride?: ChordRhythmId) => {
+    const r = getChordRhythm(rhythmOverride ?? rhythmId)
+    const beats = r.beatsFor(beatsPerBar)
+    // Preview un peu plus lente que le tempo projet (~×1.25)
+    const chordSec = Math.max(0.55, (beats * 60) / Math.max(40, project.bpm) * 1.25)
     void audioEngine.previewChordProgression(evo.chords, {
-      chordSec: Math.min(0.85, Math.max(0.45, 2.8 / Math.max(1, evo.chords.length))),
+      chordSec,
+      gapSec: 0.08,
       octave: 3,
       instrumentId: 'piano',
     })
@@ -71,6 +83,12 @@ export function ModesPanel({ open, onClose }: Props) {
       ),
     )
     previewEvolution(evo)
+  }
+
+  const onRhythmChange = (id: ChordRhythmId) => {
+    setRhythmId(id)
+    const evo = getEvolution(selectedEvo)
+    if (evo) previewEvolution(evo, id)
   }
 
   const addSection = () => {
@@ -98,7 +116,6 @@ export function ModesPanel({ open, onClose }: Props) {
   }
 
   const applyToProject = () => {
-    const beatsPerBar = project.timeSignature.numerator
     let cursor = 0
     const clips: { name: string; start: number; duration: number; notes: ReturnType<typeof chordsToMidiNotes> }[] = []
 
@@ -106,24 +123,20 @@ export function ModesPanel({ open, onClose }: Props) {
       const chordNames = resolveSectionChords(section)
       if (!chordNames.length) continue
       const sectionBeats = Math.max(1, section.bars) * beatsPerBar
-      // Répartir les accords sur la durée de la section
-      const perChord = Math.max(0.5, sectionBeats / chordNames.length)
       const notes = chordsToMidiNotes(chordNames, {
-        beatsPerChord: beatsPerChord > 0 ? Math.min(beatsPerChord, perChord) : perChord,
+        beatsPerChord: Math.max(0.25, beatsPerChord),
+        fillBeats: sectionBeats,
         startBeat: 0,
         octave: 3,
         velocity: 84,
       })
-      // Si beatsPerChord fixe laisse de la place, étendre pour couvrir la section
-      const notesDuration = chordNames.length * (beatsPerChord > 0 ? Math.min(beatsPerChord, perChord) : perChord)
-      const duration = Math.max(sectionBeats, notesDuration)
       clips.push({
         name: SECTION_LABELS[section.kind],
         start: cursor,
-        duration,
+        duration: sectionBeats,
         notes,
       })
-      cursor += duration
+      cursor += sectionBeats
     }
 
     if (!clips.length) {
@@ -246,16 +259,20 @@ export function ModesPanel({ open, onClose }: Props) {
               </button>
             </div>
 
-            <label className="flex items-center gap-2 text-[11px] text-[var(--muted)] mb-3">
-              Beats / accord
-              <input
-                type="number"
-                className="mono w-14"
-                min={1}
-                max={8}
-                value={beatsPerChord}
-                onChange={(e) => setBeatsPerChord(Math.max(1, Number(e.target.value) || 4))}
-              />
+            <label className="flex flex-col gap-1 text-[11px] text-[var(--muted)] mb-3">
+              <span>Rythme des accords</span>
+              <select
+                className="modes-rhythm"
+                value={rhythmId}
+                onChange={(e) => onRhythmChange(e.target.value as ChordRhythmId)}
+                title={rhythm.hint}
+              >
+                {CHORD_RHYTHMS.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label} — {r.hint}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <div className="modes-struct-list">

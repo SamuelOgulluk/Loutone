@@ -920,6 +920,10 @@ input[type="range"]::-moz-range-thumb {
   resize: vertical;
   min-height: 2.4rem;
 }
+.modes-rhythm {
+  width: 100%;
+  font-size: 12px;
+}
 .modes-footer {
   display: flex;
   align-items: center;
