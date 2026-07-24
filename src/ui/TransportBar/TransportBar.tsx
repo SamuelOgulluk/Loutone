@@ -6,6 +6,7 @@ import { togglePlay, stopTransport } from '@/ui/hooks/useTransport'
 import { saveProjectToFile, loadProjectFromFile } from '@/project/io'
 import { exportProjectMp3, exportProjectWav } from '@/audio/export'
 import { WhistleRecorder } from '@/audio/whistleToMidi'
+import { ModesPanel } from '@/ui/ModesPanel/ModesPanel'
 import { THEME_IDS, THEME_LABELS, applyTheme, getStoredTheme } from '@/ui/theme'
 import { TRACK_COLORS, uid } from '@/types/project'
 
@@ -43,6 +44,7 @@ export function TransportBar() {
   const [exporting, setExporting] = useState(false)
   const [whistleRecording, setWhistleRecording] = useState(false)
   const [whistleStatus, setWhistleStatus] = useState('')
+  const [modesOpen, setModesOpen] = useState(false)
   const whistleRef = useRef(new WhistleRecorder())
   const closeTimer = useRef(0)
   const triggerRef = useRef(null as HTMLDivElement | null)
@@ -301,6 +303,15 @@ export function TransportBar() {
         />
       </label>
 
+      <button
+        type="button"
+        className={`btn ${modesOpen ? 'btn-active' : ''}`}
+        title="Modes & structure — progressions d'accords"
+        onClick={() => setModesOpen(true)}
+      >
+        Modes
+      </button>
+
       <div className="flex-1" />
 
       <div
@@ -417,6 +428,7 @@ export function TransportBar() {
           </div>,
           document.body,
         )}
+      <ModesPanel open={modesOpen} onClose={() => setModesOpen(false)} />
     </header>
   )
 }
