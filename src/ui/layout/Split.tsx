@@ -13,7 +13,7 @@ type SplitProps = {
   children: React.ReactNode
 }
 
-const PREFIX = 'lutra-split:'
+const PREFIX = 'loutone-split:'
 
 function load(key: string, fallback: number[]) {
   try {

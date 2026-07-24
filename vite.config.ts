@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  // GitHub Pages : /lutra/ — local / Tauri : /
+  // GitHub Pages suit le nom du repo (lutra) — local / Tauri : /
   base: process.env.GITHUB_PAGES === 'true' ? '/lutra/' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {

@@ -218,7 +218,7 @@ export function createDemoProject(): Project {
   const length = 32
   return {
     version: 1,
-    name: 'Démo Lutra — Rivière',
+    name: 'Démo Loutone — Rivière',
     bpm: 100,
     timeSignature: { numerator: 4, denominator: 4 },
     loopEnabled: true,
