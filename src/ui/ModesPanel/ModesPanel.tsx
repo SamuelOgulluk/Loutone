@@ -5,12 +5,18 @@ import { audioEngine } from '@/audio/engine'
 import { TRACK_COLORS, uid } from '@/types/project'
 import {
   CHORD_RHYTHMS,
+  DEFAULT_KEY,
+  KEY_TONICS,
   MODE_EVOLUTIONS,
   SECTION_KINDS,
   SECTION_LABELS,
   chordsToMidiNotes,
   defaultRhythmPattern,
   defaultStructure,
+  evolutionChords,
+  evolutionDegreesLabel,
+  evolutionsByGenre,
+  formatKey,
   getEvolution,
   makeRhythmCell,
   resolveSectionChords,
@@ -19,6 +25,7 @@ import {
   rhythmPatternTotal,
   type ChordRhythmId,
   type ModeEvolution,
+  type MusicalKey,
   type RhythmCell,
   type SectionKind,
   type StructureSection,
@@ -40,18 +47,15 @@ export function ModesPanel({ open, onClose }: Props) {
   const setProject = useDawStore((s) => s.setProject)
 
   const beatsPerBar = project.timeSignature.numerator
+  const [key, setKey] = useState(DEFAULT_KEY)
   const [sections, setSections] = useState(defaultStructure)
-  const [selectedEvo, setSelectedEvo] = useState(MODE_EVOLUTIONS[3]?.id ?? MODE_EVOLUTIONS[0].id)
+  const [selectedEvo, setSelectedEvo] = useState(MODE_EVOLUTIONS[0]?.id ?? 'pop-clair')
   const [activeSectionId, setActiveSectionId] = useState(sections[1]?.id ?? sections[0].id)
   const [rhythmCells, setRhythmCells] = useState(() => defaultRhythmPattern(4))
   const [selectedCellId, setSelectedCellId] = useState('')
   const [status, setStatus] = useState('')
 
-  const evolutions = useMemo(
-    () => [...MODE_EVOLUTIONS].sort((a, b) => a.order - b.order),
-    [],
-  )
-
+  const genreGroups = useMemo(() => evolutionsByGenre(), [])
   const patternBeats = useMemo(() => rhythmCells.map((c) => c.beats), [rhythmCells])
   const patternTotal = rhythmPatternTotal(rhythmCells)
   const patternBars = Math.max(1, Math.ceil(patternTotal / Math.max(1, beatsPerBar) - 0.001))
@@ -63,22 +67,44 @@ export function ModesPanel({ open, onClose }: Props) {
 
   if (!open) return null
 
+  const chordsOf = (evo: ModeEvolution) => evolutionChords(evo, key)
+
   const updateSection = (id: string, patch: Partial<StructureSection>) => {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
 
-  const previewEvolution = (evo: ModeEvolution, pattern = patternBeats) => {
+  const previewEvolution = (evo: ModeEvolution, pattern = patternBeats, keyOverride = key) => {
+    const chords = evolutionChords(evo, keyOverride)
     const slots = pattern.length ? pattern : [beatsPerBar]
-    const chordSecs = evo.chords.map((_, i) => {
+    const chordSecs = chords.map((_, i) => {
       const beats = slots[i % slots.length]
       return Math.max(0.45, (beats * 60) / Math.max(40, project.bpm) * 1.25)
     })
-    void audioEngine.previewChordProgression(evo.chords, {
+    void audioEngine.previewChordProgression(chords, {
       chordSecs,
       gapSec: 0.06,
       octave: 3,
       instrumentId: 'piano',
     })
+  }
+
+  const rekeySections = (nextKey: MusicalKey) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (!s.progressionId) return s
+        const evo = getEvolution(s.progressionId)
+        if (!evo) return s
+        return { ...s, customChords: evolutionChords(evo, nextKey).join(' ') }
+      }),
+    )
+  }
+
+  const onKeyChange = (patch: Partial<MusicalKey>) => {
+    const next = { ...key, ...patch }
+    setKey(next)
+    rekeySections(next)
+    const evo = getEvolution(selectedEvo)
+    if (evo) previewEvolution(evo, patternBeats, next)
   }
 
   const setPattern = (cells: RhythmCell[], replay = true) => {
@@ -92,11 +118,12 @@ export function ModesPanel({ open, onClose }: Props) {
   }
 
   const assignEvoToActive = (evo: ModeEvolution) => {
+    const chords = chordsOf(evo)
     setSelectedEvo(evo.id)
     setSections((prev) =>
       prev.map((s) =>
         s.id === activeSectionId
-          ? { ...s, progressionId: evo.id, customChords: evo.chords.join(' ') }
+          ? { ...s, progressionId: evo.id, customChords: chords.join(' ') }
           : s,
       ),
     )
@@ -143,6 +170,7 @@ export function ModesPanel({ open, onClose }: Props) {
 
   const addSection = () => {
     const id = uid('sec')
+    const evo = getEvolution(selectedEvo)
     setSections((prev) => [
       ...prev,
       {
@@ -150,7 +178,7 @@ export function ModesPanel({ open, onClose }: Props) {
         kind: 'couplet',
         bars: 4,
         progressionId: selectedEvo,
-        customChords: getEvolution(selectedEvo)?.chords.join(' ') ?? '',
+        customChords: evo ? evolutionChords(evo, key).join(' ') : '',
       },
     ])
     setActiveSectionId(id)
@@ -170,7 +198,7 @@ export function ModesPanel({ open, onClose }: Props) {
     const clips: { name: string; start: number; duration: number; notes: ReturnType<typeof chordsToMidiNotes> }[] = []
 
     for (const section of sections) {
-      const chordNames = resolveSectionChords(section)
+      const chordNames = resolveSectionChords(section, key)
       if (!chordNames.length) continue
       const sectionBeats = Math.max(1, section.bars) * beatsPerBar
       const notes = chordsToMidiNotes(chordNames, {
@@ -260,7 +288,7 @@ export function ModesPanel({ open, onClose }: Props) {
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Modes & structure</h2>
             <p className="text-[11px] text-[var(--muted)] mt-0.5">
-              Choisis une évolution d’accords, assigne-la aux sections, puis applique en MIDI piano.
+              Choisis la tonalité, une grille en degrés par genre, puis applique en MIDI piano.
             </p>
           </div>
           <button
@@ -277,27 +305,69 @@ export function ModesPanel({ open, onClose }: Props) {
 
         <div className="modes-body">
           <aside className="modes-lib">
-            <div className="modes-section-title">Bibliothèque — du clair au sombre</div>
-            <div className="modes-lib-list">
-              {evolutions.map((evo) => {
-                const active = selectedEvo === evo.id
-                return (
+            <div className="modes-keybar">
+              <div className="modes-section-title mb-0">Tonalité</div>
+              <div className="modes-key-controls">
+                <select
+                  className="modes-key-tonic"
+                  value={key.tonic}
+                  onChange={(e) => onKeyChange({ tonic: e.target.value })}
+                  aria-label="Tonalité"
+                >
+                  {KEY_TONICS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <div className="modes-key-mode">
                   <button
-                    key={evo.id}
                     type="button"
-                    className={`modes-evo ${active ? 'is-active' : ''}`}
-                    onClick={() => assignEvoToActive(evo)}
-                    title="Écouter et assigner à la section sélectionnée"
+                    className={`btn btn-compact ${key.mode === 'maj' ? 'btn-active' : ''}`}
+                    onClick={() => onKeyChange({ mode: 'maj' })}
                   >
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-medium text-sm">{evo.label}</span>
-                      <span className="text-[10px] text-[var(--muted)] mono">{evo.order}</span>
-                    </div>
-                    <div className="text-[10px] text-[var(--muted)] mt-0.5">{evo.feel}</div>
-                    <div className="modes-chords mono mt-1.5">{evo.chords.join(' · ')}</div>
+                    maj
                   </button>
-                )
-              })}
+                  <button
+                    type="button"
+                    className={`btn btn-compact ${key.mode === 'min' ? 'btn-active' : ''}`}
+                    onClick={() => onKeyChange({ mode: 'min' })}
+                  >
+                    min
+                  </button>
+                </div>
+                <span className="modes-key-badge mono">{formatKey(key)}</span>
+              </div>
+            </div>
+
+            <div className="modes-section-title">Bibliothèque — par genre</div>
+            <div className="modes-lib-list">
+              {genreGroups.map((group) => (
+                <div key={group.genre} className="modes-genre">
+                  <div className="modes-genre-title">{group.label}</div>
+                  {group.items.map((evo) => {
+                    const active = selectedEvo === evo.id
+                    const chords = chordsOf(evo)
+                    return (
+                      <button
+                        key={evo.id}
+                        type="button"
+                        className={`modes-evo ${active ? 'is-active' : ''}`}
+                        onClick={() => assignEvoToActive(evo)}
+                        title="Écouter et assigner à la section sélectionnée"
+                      >
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-medium text-sm">{evo.label}</span>
+                          <span className="text-[10px] text-[var(--muted)] mono">{evo.order}</span>
+                        </div>
+                        <div className="text-[10px] text-[var(--muted)] mt-0.5">{evo.feel}</div>
+                        <div className="modes-degrees mono mt-1.5">{evolutionDegreesLabel(evo)}</div>
+                        <div className="modes-chords mono mt-1">{chords.join(' · ')}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
             </div>
           </aside>
 
@@ -420,7 +490,7 @@ export function ModesPanel({ open, onClose }: Props) {
             <div className="modes-struct-list">
               {sections.map((sec) => {
                 const selected = activeSectionId === sec.id
-                const preview = resolveSectionChords(sec)
+                const preview = resolveSectionChords(sec, key)
                 return (
                   <div
                     key={sec.id}
