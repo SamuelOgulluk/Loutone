@@ -145,22 +145,64 @@ export type ChordRhythm = {
   beatsFor: (beatsPerBar: number) => number
 }
 
+export type RhythmCell = {
+  id: string
+  beats: number
+}
+
 export const CHORD_RHYTHMS: ChordRhythm[] = [
-  { id: 'whole', label: 'Ronde', hint: '1 accord / mesure', beatsFor: (b) => b },
-  { id: 'half', label: '2 blanches', hint: '2 accords / mesure', beatsFor: (b) => b / 2 },
-  { id: 'quarter', label: '4 noires', hint: '4 accords / mesure', beatsFor: (b) => b / 4 },
-  { id: 'eighth', label: '8 croches', hint: '8 accords / mesure', beatsFor: (b) => b / 8 },
-  { id: 'triplet', label: 'Triolets', hint: '3 accords / mesure', beatsFor: (b) => b / 3 },
+  { id: 'whole', label: 'Ronde', hint: '1 / mesure', beatsFor: (b) => b },
+  { id: 'half', label: '2 blanches', hint: '2 / mesure', beatsFor: (b) => b / 2 },
+  { id: 'quarter', label: '4 noires', hint: '4 / mesure', beatsFor: (b) => b / 4 },
+  { id: 'eighth', label: '8 croches', hint: '8 / mesure', beatsFor: (b) => b / 8 },
+  { id: 'triplet', label: 'Triolets', hint: '3 / mesure', beatsFor: (b) => b / 3 },
   {
     id: 'triplet-half',
-    label: 'Triolets de blanches',
-    hint: '3 accords / 2 mesures',
+    label: 'Triolets ♩.',
+    hint: '3 / 2 mesures',
     beatsFor: (b) => (b * 2) / 3,
   },
 ]
 
 export function getChordRhythm(id: string) {
   return CHORD_RHYTHMS.find((r) => r.id === id) ?? CHORD_RHYTHMS[0]
+}
+
+export function makeRhythmCell(beats: number): RhythmCell {
+  return { id: `r_${Math.random().toString(36).slice(2, 9)}`, beats }
+}
+
+export function defaultRhythmPattern(beatsPerBar: number): RhythmCell[] {
+  return [makeRhythmCell(beatsPerBar)]
+}
+
+export function rhythmPatternFromPreset(id: ChordRhythmId, beatsPerBar: number): RhythmCell[] {
+  const cell = getChordRhythm(id).beatsFor(beatsPerBar)
+  const target = id === 'triplet-half' ? beatsPerBar * 2 : beatsPerBar
+  const cells: RhythmCell[] = []
+  let t = 0
+  while (t + 0.001 < target) {
+    const beats = Math.min(cell, target - t)
+    cells.push(makeRhythmCell(beats))
+    t += beats
+    if (cells.length > 64) break
+  }
+  return cells.length ? cells : defaultRhythmPattern(beatsPerBar)
+}
+
+export function rhythmPatternTotal(cells: RhythmCell[]) {
+  return cells.reduce((sum, c) => sum + c.beats, 0)
+}
+
+export function rhythmNoteLabel(beats: number, beatsPerBar: number) {
+  const r = beats / Math.max(0.001, beatsPerBar)
+  if (r >= 0.95) return { glyph: '𝅝', name: 'Ronde' }
+  if (Math.abs(beats - (beatsPerBar * 2) / 3) < 0.05) return { glyph: '♩.', name: 'Triolet' }
+  if (r >= 0.45) return { glyph: '𝅗', name: 'Blanche' }
+  if (Math.abs(beats - beatsPerBar / 3) < 0.05) return { glyph: '⅓', name: 'Triolet' }
+  if (r >= 0.22) return { glyph: '♩', name: 'Noire' }
+  if (r >= 0.1) return { glyph: '♪', name: 'Croche' }
+  return { glyph: '𝅘', name: 'Court' }
 }
 
 export function resolveSectionChords(section: StructureSection) {
@@ -176,29 +218,38 @@ export function chordsToMidiNotes(
   chordNames: string[],
   opts: {
     beatsPerChord?: number
+    pattern?: number[]
     octave?: number
     velocity?: number
     startBeat?: number
     fillBeats?: number
   } = {},
 ) {
-  const beatsPerChord = opts.beatsPerChord ?? 4
   const octave = opts.octave ?? 3
   const velocity = opts.velocity ?? 82
   const startBeat = opts.startBeat ?? 0
   const notes: MidiNote[] = []
-  if (!chordNames.length || beatsPerChord <= 0) return notes
+  if (!chordNames.length) return notes
+
+  const pattern =
+    opts.pattern && opts.pattern.length
+      ? opts.pattern.filter((b) => b > 0)
+      : [opts.beatsPerChord ?? 4]
+  if (!pattern.length) return notes
 
   if (opts.fillBeats && opts.fillBeats > 0) {
     let t = startBeat
     let i = 0
+    let p = 0
     const end = startBeat + opts.fillBeats
     while (t < end - 0.001) {
+      const slot = pattern[p % pattern.length]
+      const dur = Math.min(slot, end - t)
       const parsed = parseChord(chordNames[i % chordNames.length], octave)
-      const dur = Math.min(beatsPerChord, end - t)
       if (parsed && dur > 0.05) notes.push(...chordToNotes(parsed, t, dur * 0.95, velocity))
-      t += beatsPerChord
+      t += slot
       i += 1
+      p += 1
       if (i > 512) break
     }
     return notes
@@ -207,7 +258,9 @@ export function chordsToMidiNotes(
   chordNames.forEach((name, i) => {
     const parsed = parseChord(name, octave)
     if (!parsed) return
-    const start = startBeat + i * beatsPerChord
+    const beatsPerChord = pattern[i % pattern.length]
+    let start = startBeat
+    for (let k = 0; k < i; k++) start += pattern[k % pattern.length]
     notes.push(...chordToNotes(parsed, start, beatsPerChord * 0.95, velocity))
   })
   return notes
