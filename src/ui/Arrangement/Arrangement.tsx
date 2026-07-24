@@ -406,6 +406,23 @@ export function Arrangement() {
     }
   }
 
+  const onVoidPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    e.preventDefault()
+    setContextMenu(null)
+    const beat = snapBeat(beatFromClientX(e.clientX))
+    audioEngine.seek(beat)
+    setPositionBeat(beat)
+    selectClips([], null, null)
+    setSelection({
+      trackId: null,
+      clipId: null,
+      selectedClipIds: [],
+      noteIds: [],
+      effectId: null,
+    })
+  }
+
   const onLaneContextMenu = (track: Track, e: MouseEvent, clipId: string | null = null) => {
     e.preventDefault()
     e.stopPropagation()
@@ -579,6 +596,10 @@ export function Arrangement() {
 
   const autoModes: AutomationTargetMode[] = ['volume', 'effect', 'instrument']
   const openSet = new Set(automationOpenIds)
+  const tracksHeight = project.tracks.reduce(
+    (sum, track) => sum + track.height + (openSet.has(track.id) ? AUTOMATION_LANE_H : 0),
+    0,
+  )
 
   return (
     <section
@@ -817,6 +838,7 @@ export function Arrangement() {
             <div
               ref={lanesRef}
               className="relative z-[1]"
+              style={{ minHeight: `max(12rem, calc(100% - 1.75rem))` }}
               onPointerMove={onPointerMove}
               onPointerUp={endPointerInteractions}
             >
@@ -953,6 +975,12 @@ export function Arrangement() {
                 </div>
                 )
               })}
+              <div
+                className="arr-lanes-void absolute left-0 right-0 bottom-0 cursor-text"
+                style={{ top: tracksHeight, width, minHeight: 80 }}
+                title="Cliquer pour placer la tête de lecture"
+                onPointerDown={onVoidPointerDown}
+              />
               {marquee && (
                 <div
                   className="arr-marquee pointer-events-none absolute z-30"
