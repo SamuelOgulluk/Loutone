@@ -11,7 +11,6 @@ import {
   sortPoints,
 } from './automation'
 import { audioEngine } from './engine'
-import { Mp3Encoder } from '@breezystack/lamejs'
 
 const TAIL_SEC = 1.5
 const DEFAULT_BEATS = 16
@@ -176,8 +175,9 @@ export function encodeWav(buffer: AudioBuffer) {
   return new Blob([ab], { type: 'audio/wav' })
 }
 
-export function encodeMp3(buffer: AudioBuffer) {
+export async function encodeMp3(buffer: AudioBuffer) {
   try {
+    const { Mp3Encoder } = await import('@breezystack/lamejs')
     const channels = Math.min(2, buffer.numberOfChannels)
     const sampleRate = buffer.sampleRate
     const left = floatToPcm16(buffer.getChannelData(0))
@@ -213,7 +213,7 @@ export async function exportProjectWav(project: Project) {
 
 export async function exportProjectMp3(project: Project) {
   const rendered = await bounceProject(project)
-  const blob = encodeMp3(rendered)
+  const blob = await encodeMp3(rendered)
   const name = `${project.name || 'projet'}.mp3`
   await saveAudioBlob(blob, name, [{ name: 'MP3', extensions: ['mp3'] }])
   return blob

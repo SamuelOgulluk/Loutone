@@ -3,13 +3,16 @@ import { createPortal } from 'react-dom'
 import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { togglePlay, stopTransport } from '@/ui/hooks/useTransport'
-import { saveProjectToFile, loadProjectFromFile } from '@/project/io'
-import { exportProjectMp3, exportProjectWav } from '@/audio/export'
-import { WhistleRecorder } from '@/audio/whistleToMidi'
 import { THEME_IDS, THEME_LABELS, applyTheme, getStoredTheme } from '@/ui/theme'
 import { TRACK_COLORS, uid } from '@/types/project'
+import type { WhistleRecorder } from '@/audio/whistleToMidi'
 
 const MENU_CLOSE_MS = 180
+
+async function loadWhistleRecorder() {
+  const { WhistleRecorder } = await import('@/audio/whistleToMidi')
+  return new WhistleRecorder()
+}
 
 export function TransportBar() {
   const project = useDawStore((s) => s.project)
@@ -45,9 +48,20 @@ export function TransportBar() {
   const [exporting, setExporting] = useState(false)
   const [whistleRecording, setWhistleRecording] = useState(false)
   const [whistleStatus, setWhistleStatus] = useState('')
-  const whistleRef = useRef(new WhistleRecorder())
+  const whistleRef = useRef(null as WhistleRecorder | null)
+  const whistleReady = useRef(null as Promise<WhistleRecorder> | null)
   const closeTimer = useRef(0)
   const triggerRef = useRef(null as HTMLDivElement | null)
+
+  const ensureWhistle = () => {
+    if (!whistleReady.current) {
+      whistleReady.current = loadWhistleRecorder().then((rec) => {
+        whistleRef.current = rec
+        return rec
+      })
+    }
+    return whistleReady.current
+  }
 
   const runExport = async (kind: 'wav' | 'mp3') => {
     if (exporting) return
@@ -58,6 +72,7 @@ export function TransportBar() {
         audioEngine.pause()
         useDawStore.getState().setPlaying(false)
       }
+      const { exportProjectMp3, exportProjectWav } = await import('@/audio/export')
       if (kind === 'wav') await exportProjectWav(project)
       else await exportProjectMp3(project)
       setExportStatus(kind === 'wav' ? 'WAV exporté' : 'MP3 exporté')
@@ -73,7 +88,7 @@ export function TransportBar() {
   }
 
   const toggleWhistleRecord = async () => {
-    const rec = whistleRef.current
+    const rec = await ensureWhistle()
     if (rec.isBusy) return
     if (rec.isRecording) {
       setWhistleStatus('Analyse rythme…')
@@ -156,7 +171,7 @@ export function TransportBar() {
     }
   }
 
-  useEffect(() => () => { void whistleRef.current.cancel() }, [])
+  useEffect(() => () => { void whistleRef.current?.cancel() }, [])
 
   const clearCloseTimer = () => {
     if (closeTimer.current) {
@@ -360,6 +375,7 @@ export function TransportBar() {
               role="menuitem"
               title="Importer un projet JSON (Ctrl+O)"
               onClick={async () => {
+                const { loadProjectFromFile } = await import('@/project/io')
                 const p = await loadProjectFromFile()
                 if (p) setProject(p)
               }}
@@ -371,7 +387,10 @@ export function TransportBar() {
               role="menuitem"
               className="tb-menu-accent"
               title="Sauver (Ctrl+S)"
-              onClick={() => void saveProjectToFile(project)}
+              onClick={async () => {
+                const { saveProjectToFile } = await import('@/project/io')
+                await saveProjectToFile(project)
+              }}
             >
               Sauver
             </button>

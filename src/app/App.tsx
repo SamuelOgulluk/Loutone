@@ -1,16 +1,30 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { TransportBar } from '@/ui/TransportBar/TransportBar'
 import { Browser } from '@/ui/Browser/Browser'
 import { Arrangement } from '@/ui/Arrangement/Arrangement'
-import { PianoRoll } from '@/ui/MidiEditor/PianoRoll'
 import { Inspector } from '@/ui/Inspector/Inspector'
-import { ModesPanel } from '@/ui/ModesPanel/ModesPanel'
 import { Split } from '@/ui/layout/Split'
 import { useDawStore } from '@/store/useDawStore'
 import { useKeyboardShortcuts, useTransportClock } from '@/ui/hooks/useTransport'
 import { audioEngine } from '@/audio/engine'
 import { preloadEssentialSamples, setSampleDecodeContext } from '@/instruments/sampleBank'
 import '@/instruments'
+
+const ModesPanel = lazy(() =>
+  import('@/ui/ModesPanel/ModesPanel').then((m) => ({ default: m.ModesPanel })),
+)
+const PianoRoll = lazy(() =>
+  import('@/ui/MidiEditor/PianoRoll').then((m) => ({ default: m.PianoRoll })),
+)
+
+function scheduleIdle(fn: () => void) {
+  const ric = window.requestIdleCallback
+  if (typeof ric === 'function') {
+    ric(() => fn(), { timeout: 2500 })
+    return
+  }
+  window.setTimeout(fn, 400)
+}
 
 export function App() {
   const pianoRollOpen = useDawStore((s) => s.pianoRollOpen)
@@ -27,7 +41,9 @@ export function App() {
     void audioEngine.init().then(() => {
       if (audioEngine.ctx) setSampleDecodeContext(audioEngine.ctx)
       void audioEngine.ensurePlaceholderTone()
-      void preloadEssentialSamples()
+      scheduleIdle(() => {
+        void preloadEssentialSamples()
+      })
     })
     audioEngine.syncProject(useDawStore.getState().project)
     const first = useDawStore.getState().project.tracks[0]
@@ -42,12 +58,22 @@ export function App() {
     return () => window.removeEventListener('pointerdown', unlock)
   }, [])
 
+  // Prefetch des panneaux hors chemin critique
+  useEffect(() => {
+    scheduleIdle(() => {
+      void import('@/ui/MidiEditor/PianoRoll')
+      void import('@/ui/ModesPanel/ModesPanel')
+    })
+  }, [])
+
   return (
     <div className="h-full w-full min-w-0 overflow-hidden flex flex-col gap-2 p-2">
       <TransportBar />
       {mainView === 'modes' ? (
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
-          <ModesPanel />
+          <Suspense fallback={<div className="panel h-full" />}>
+            <ModesPanel />
+          </Suspense>
         </div>
       ) : (
         <Split
@@ -72,7 +98,9 @@ export function App() {
                 max={[75, 75]}
               >
                 <Arrangement />
-                <PianoRoll />
+                <Suspense fallback={<div className="panel h-full" />}>
+                  <PianoRoll />
+                </Suspense>
               </Split>
             ) : (
               <Arrangement />

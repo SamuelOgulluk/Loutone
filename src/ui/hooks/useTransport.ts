@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
-import { saveProjectToFile, loadProjectFromFile } from '@/project/io'
 import { quantizeBeats } from '@/midi/chords'
 
 export function useTransportClock() {
@@ -59,6 +58,7 @@ export function useKeyboardShortcuts() {
       if (e.key === 's' || e.key === 'S') {
         if (mod) {
           e.preventDefault()
+          const { saveProjectToFile } = await import('@/project/io')
           await saveProjectToFile(state.project)
           return
         }
@@ -109,6 +109,7 @@ export function useKeyboardShortcuts() {
       }
       if (mod && e.key === 'o') {
         e.preventDefault()
+        const { loadProjectFromFile } = await import('@/project/io')
         const p = await loadProjectFromFile()
         if (p) state.setProject(p)
         return
