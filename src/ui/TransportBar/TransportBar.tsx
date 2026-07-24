@@ -288,6 +288,15 @@ export function TransportBar() {
         </select>
       </label>
 
+      <button
+        type="button"
+        className={`btn btn-accent shrink-0 ${modesOpen ? 'btn-active' : ''}`}
+        title="Modes & structure — progressions d'accords"
+        onClick={() => setModesOpen(true)}
+      >
+        Modes & structure
+      </button>
+
       <button className={`btn ${snap ? 'btn-active' : ''}`} onClick={() => setSnap(!snap)} title="Snap (S)">
         Snap
       </button>
@@ -302,15 +311,6 @@ export function TransportBar() {
           onChange={(e) => setZoom(Number(e.target.value))}
         />
       </label>
-
-      <button
-        type="button"
-        className={`btn ${modesOpen ? 'btn-active' : ''}`}
-        title="Modes & structure — progressions d'accords"
-        onClick={() => setModesOpen(true)}
-      >
-        Modes
-      </button>
 
       <div className="flex-1" />
 
