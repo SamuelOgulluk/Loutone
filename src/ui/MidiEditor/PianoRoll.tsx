@@ -3,7 +3,6 @@ import { useDawStore } from '@/store/useDawStore'
 import { snapBeat } from '@/ui/hooks/useTransport'
 import { parseChord, chordToNotes } from '@/midi/chords'
 import { noteName } from '@/midi/notes'
-import { notesToMidiBlob, parseMidiFile } from '@/midi/importExport'
 import { uid } from '@/types/project'
 
 const KEY_H = 18
@@ -269,7 +268,8 @@ export function PianoRoll() {
           </button>
           <button
             className="btn btn-compact text-xs"
-            onClick={() => {
+            onClick={async () => {
+              const { notesToMidiBlob } = await import('@/midi/importExport')
               const blob = notesToMidiBlob(clip.notes, project.bpm)
               const url = URL.createObjectURL(blob)
               const a = document.createElement('a')
@@ -290,6 +290,7 @@ export function PianoRoll() {
               input.onchange = async () => {
                 const file = input.files?.[0]
                 if (!file) return
+                const { parseMidiFile } = await import('@/midi/importExport')
                 const notes = parseMidiFile(await file.arrayBuffer())
                 updateMidiClip(track.id, clip.id, { notes: [...clip.notes, ...notes] })
               }

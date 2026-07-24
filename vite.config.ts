@@ -21,5 +21,19 @@ export default defineConfig({
   build: {
     target: 'esnext',
     sourcemap: !!process.env.TAURI_DEBUG,
+    cssCodeSplit: true,
+    modulePreload: { polyfill: false },
+    reportCompressedSize: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/@breezystack/lamejs')) return 'lame'
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'react'
+          if (id.includes('node_modules/zustand')) return 'zustand'
+          return undefined
+        },
+      },
+    },
   },
 })
