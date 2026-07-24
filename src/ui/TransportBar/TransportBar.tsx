@@ -205,34 +205,9 @@ export function TransportBar() {
   return (
     <header className="panel flex items-center gap-3 px-3 py-2 overflow-visible">
       <div className="flex items-center gap-2 pr-3 border-r border-[var(--line)]">
-        <span className="inline-flex items-center gap-1.5 text-[var(--accent)]" title="Otty">
-          <svg
-            className="shrink-0"
-            width="24"
-            height="24"
-            viewBox="0 0 32 32"
-            fill="none"
-            aria-hidden
-          >
-            <circle cx="16" cy="16" r="15" fill="currentColor" opacity="0.18" />
-            <ellipse cx="7" cy="9" rx="4.2" ry="4.8" fill="currentColor" />
-            <ellipse cx="25" cy="9" rx="4.2" ry="4.8" fill="currentColor" />
-            <ellipse cx="7.2" cy="9.4" rx="2" ry="2.4" fill="var(--bg)" opacity="0.45" />
-            <ellipse cx="24.8" cy="9.4" rx="2" ry="2.4" fill="var(--bg)" opacity="0.45" />
-            <ellipse cx="16" cy="18.5" rx="10.5" ry="9.5" fill="currentColor" />
-            <circle cx="11.2" cy="16.2" r="2.1" fill="var(--bg)" />
-            <circle cx="20.8" cy="16.2" r="2.1" fill="var(--bg)" />
-            <circle cx="11.7" cy="15.7" r="0.65" fill="currentColor" />
-            <circle cx="21.3" cy="15.7" r="0.65" fill="currentColor" />
-            <ellipse cx="16" cy="20.2" rx="2.1" ry="1.5" fill="var(--bg)" />
-            <path
-              d="M13.2 22.8c1.2 1.4 4.4 1.4 5.6 0"
-              stroke="var(--bg)"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-            />
-          </svg>
-          <span className="text-xl font-semibold tracking-tight">Otty</span>
+        <span className="inline-flex items-center gap-1.5 text-[var(--accent)]" title="Lutra">
+          <img src={`${import.meta.env.BASE_URL}lutra.svg`} alt="" width={24} height={24} className="shrink-0 rounded-[6px]" />
+          <span className="text-xl font-semibold tracking-tight">Lutra</span>
         </span>
         <input
           className="bg-transparent border-none text-sm text-[var(--muted)] w-36"

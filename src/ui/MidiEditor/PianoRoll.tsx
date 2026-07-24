@@ -32,8 +32,8 @@ export function PianoRoll() {
 
   useEffect(() => {
     const onTheme = () => setThemeTick((n) => n + 1)
-    window.addEventListener('otty-theme', onTheme)
-    return () => window.removeEventListener('otty-theme', onTheme)
+    window.addEventListener('lutra-theme', onTheme)
+    return () => window.removeEventListener('lutra-theme', onTheme)
   }, [])
   const [drawVel, setDrawVel] = useState(100)
   const canvasRef = useRef<HTMLCanvasElement>(null)

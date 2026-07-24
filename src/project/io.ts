@@ -32,7 +32,7 @@ export async function saveProjectToFile(project: Project) {
     const { writeTextFile } = await import('@tauri-apps/plugin-fs')
     const path = await save({
       defaultPath: `${project.name || 'projet'}.softdaw.json`,
-      filters: [{ name: 'Otty', extensions: ['softdaw.json', 'json'] }],
+      filters: [{ name: 'Lutra', extensions: ['softdaw.json', 'json'] }],
     })
     if (!path) return false
     await writeTextFile(path, json)
@@ -49,7 +49,7 @@ export async function loadProjectFromFile(): Promise<Project | null> {
     const { readTextFile } = await import('@tauri-apps/plugin-fs')
     const path = await open({
       multiple: false,
-      filters: [{ name: 'Otty', extensions: ['softdaw.json', 'json'] }],
+      filters: [{ name: 'Lutra', extensions: ['softdaw.json', 'json'] }],
     })
     if (!path || Array.isArray(path)) return null
     const text = await readTextFile(path)

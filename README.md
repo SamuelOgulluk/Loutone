@@ -1,8 +1,8 @@
-# Otty — DAW local
+# Lutra — DAW local
 
-Application DAW desktop locale (Tauri 2 + Vite + React + Web Audio). Pas d'IA en V1.
+Application DAW desktop locale (Tauri 2 + Vite + React + Web Audio). Nom du genre des loutres (*Lutra*). Pas d'IA en V1.
 
-**Demo en ligne :** https://samuelogulluk.github.io/otty/
+**Demo en ligne :** https://samuelogulluk.github.io/lutra/
 
 ## Prérequis
 

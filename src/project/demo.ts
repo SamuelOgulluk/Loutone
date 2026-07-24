@@ -67,7 +67,7 @@ export function createDemoProject(): Project {
 
   return {
     version: 1,
-    name: 'Démo Otty',
+    name: 'Démo Lutra',
     bpm: 108,
     timeSignature: { numerator: 4, denominator: 4 },
     loopEnabled: true,
