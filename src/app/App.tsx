@@ -55,12 +55,23 @@ export function App() {
           className="flex-1 min-h-0 min-w-0"
           axis="row"
           mode="sides-px"
-          storageKey="arrange-main"
-          initial={[200, 260]}
-          min={[140, 180]}
-          max={[420, 480]}
+          storageKey="arrange-main-v2"
+          initial={[280, 280]}
+          min={[200, 200]}
+          max={[520, 480]}
         >
-          <Browser />
+          <Split
+            className="h-full"
+            axis="column"
+            mode="percent"
+            storageKey="arrange-left"
+            initial={[55, 45]}
+            min={[25, 22]}
+            max={[78, 75]}
+          >
+            <Browser />
+            <Mixer />
+          </Split>
           <div className="h-full min-h-0 min-w-0 overflow-hidden">
             {pianoRollOpen ? (
               <Split
@@ -79,18 +90,7 @@ export function App() {
               <Arrangement />
             )}
           </div>
-          <Split
-            className="h-full"
-            axis="column"
-            mode="percent"
-            storageKey="arrange-right"
-            initial={[60, 40]}
-            min={[25, 20]}
-            max={[80, 75]}
-          >
-            <Inspector />
-            <Mixer />
-          </Split>
+          <Inspector />
         </Split>
       )}
     </div>
