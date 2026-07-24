@@ -292,7 +292,7 @@ function normalizeDegreeSuffix(raw: string, minorDefault: boolean) {
 export function resolveDegreeToChord(degree: string, key: MusicalKey) {
   const raw = degree.trim()
   if (!raw) return ''
-  const m = raw.match(/^(b|#)?(VII|VI|IV|III|II|I|vii|vi|iv|iii|ii|i)(.*)$/)
+  const m = raw.match(/^(b|#)?(VII|VI|IV|III|II|V|I|vii|vi|iv|iii|ii|v|i)(.*)$/)
   if (!m) return raw
   const accidental = m[1] || ''
   const numeral = m[2]
