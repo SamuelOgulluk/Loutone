@@ -497,6 +497,11 @@ export function resolveSectionChords(section: StructureSection, key: MusicalKey 
   return [] as string[]
 }
 
+export function chordIndexForHit(hitIndex: number, hitCount: number, chordCount: number) {
+  if (chordCount <= 1 || hitCount <= 0) return 0
+  return Math.min(chordCount - 1, Math.floor((hitIndex * chordCount) / hitCount))
+}
+
 export function chordsToMidiNotes(
   chordNames: string[],
   opts: {
@@ -520,32 +525,38 @@ export function chordsToMidiNotes(
       : [opts.beatsPerChord ?? 4]
   if (!pattern.length) return notes
 
+  const pushHit = (name: string, start: number, dur: number) => {
+    const parsed = parseChord(name, octave)
+    if (!parsed || dur <= 0.05) return
+    notes.push(...chordToNotes(parsed, start, dur * 0.95, velocity))
+  }
+
+  // Un cycle de groove = une passe de la progression (pas de wrapping au milieu)
   if (opts.fillBeats && opts.fillBeats > 0) {
     let t = startBeat
-    let i = 0
-    let p = 0
     const end = startBeat + opts.fillBeats
+    let guard = 0
     while (t < end - 0.001) {
-      const slot = pattern[p % pattern.length]
-      const dur = Math.min(slot, end - t)
-      const parsed = parseChord(chordNames[i % chordNames.length], octave)
-      if (parsed && dur > 0.05) notes.push(...chordToNotes(parsed, t, dur * 0.95, velocity))
-      t += slot
-      i += 1
-      p += 1
-      if (i > 512) break
+      for (let i = 0; i < pattern.length; i++) {
+        if (t >= end - 0.001) break
+        const slot = pattern[i]
+        const dur = Math.min(slot, end - t)
+        const idx = chordIndexForHit(i, pattern.length, chordNames.length)
+        pushHit(chordNames[idx], t, dur)
+        t += slot
+        if (++guard > 512) break
+      }
+      if (guard > 512) break
     }
     return notes
   }
 
-  chordNames.forEach((name, i) => {
-    const parsed = parseChord(name, octave)
-    if (!parsed) return
-    const beatsPerChord = pattern[i % pattern.length]
+  for (let i = 0; i < pattern.length; i++) {
+    const idx = chordIndexForHit(i, pattern.length, chordNames.length)
     let start = startBeat
-    for (let k = 0; k < i; k++) start += pattern[k % pattern.length]
-    notes.push(...chordToNotes(parsed, start, beatsPerChord * 0.95, velocity))
-  })
+    for (let k = 0; k < i; k++) start += pattern[k]
+    pushHit(chordNames[idx], start, pattern[i])
+  }
   return notes
 }
 
