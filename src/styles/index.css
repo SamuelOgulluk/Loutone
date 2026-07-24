@@ -984,14 +984,260 @@ body.is-splitting-col * {
   display: flex;
   gap: 0.25rem;
 }
-.modes-key-badge {
-  margin-left: auto;
-  font-size: 12px;
-  padding: 0.2rem 0.45rem;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
-  background: color-mix(in srgb, var(--accent) 14%, var(--bg-2));
+.evo-editor {
+  margin: 0.75rem 0 1rem;
+  padding: 0.65rem 0.7rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-radius: var(--radius);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--accent) 10%, var(--bg-2)) 0%,
+      color-mix(in srgb, var(--bg-2) 92%, transparent) 55%,
+      var(--bg-2) 100%
+    );
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.evo-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.evo-count {
+  font-size: 10px;
   color: var(--accent);
+  opacity: 0.9;
+}
+.evo-hint {
+  font-size: 10px;
+  color: var(--muted);
+  margin: 0 0 0.55rem;
+  line-height: 1.35;
+}
+.evo-type-row {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+.evo-type-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.evo-chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  min-height: 3.6rem;
+  margin-bottom: 0.4rem;
+  padding: 0.45rem 0.4rem;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 8px,
+      color-mix(in srgb, var(--accent) 4%, transparent) 8px,
+      color-mix(in srgb, var(--accent) 4%, transparent) 9px
+    ),
+    color-mix(in srgb, var(--bg-1) 88%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--line));
+}
+.evo-empty {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 0.35rem;
+}
+.evo-chain-item {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  animation: evo-chip-in 0.22s ease-out;
+}
+@keyframes evo-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.evo-arrow {
+  display: inline-flex;
+  align-items: center;
+  width: 0.85rem;
+  opacity: 0.65;
+}
+.evo-arrow-line {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent));
+  position: relative;
+}
+.evo-arrow-line::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  border-left: 4px solid var(--accent);
+  transform: translateY(-50%);
+}
+.evo-chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  min-width: 3.25rem;
+  padding: 0.4rem 0.5rem 0.35rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+.evo-chip:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.evo-chip.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-2));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.evo-chip.is-bad {
+  border-color: #c45;
+  opacity: 0.85;
+}
+.evo-chip-step {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.3rem;
+  font-size: 8px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.evo-chip-token {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+.evo-chip-resolved {
+  font-size: 9px;
+  color: var(--muted);
+}
+.evo-chip-add {
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  min-height: 2.6rem;
+  color: var(--accent);
+  border-style: dashed;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+}
+.evo-chip-plus {
+  font-size: 1.15rem;
+  line-height: 1;
+  font-weight: 600;
+}
+.evo-resolved-strip {
+  font-size: 10px;
+  color: color-mix(in srgb, var(--accent) 70%, var(--muted));
+  margin: 0 0 0.45rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg-1) 75%, transparent);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.evo-selected-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.45rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-1));
+}
+.evo-selected-label {
+  font-size: 11px;
+}
+.evo-selected-arrow {
+  margin: 0 0.3rem;
+  color: var(--muted);
+}
+.evo-selected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+.evo-picker-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 0.4rem 0 0.25rem;
+}
+.evo-picker-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.evo-pick {
+  min-width: 1.85rem;
+  padding: 0.28rem 0.35rem;
+  font-size: 11px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color 0.1s ease,
+    background 0.1s ease,
+    color 0.1s ease;
+}
+.evo-pick:hover {
+  border-color: var(--accent);
+}
+.evo-pick.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-1));
+  color: var(--accent);
+}
+.evo-pick-deg {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  min-width: 2.2rem;
+}
+.evo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+}
+.evo-add-btn {
+  font-family: var(--font-mono, ui-monospace, monospace);
 }
 .modes-genre {
   display: flex;

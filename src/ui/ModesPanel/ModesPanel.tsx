@@ -3,6 +3,7 @@ import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { TRACK_COLORS, uid } from '@/types/project'
 import { Split } from '@/ui/layout/Split'
+import { EvolutionEditor } from '@/ui/ModesPanel/EvolutionEditor'
 import {
   DEFAULT_KEY,
   GROOVE_PRESETS,
@@ -21,6 +22,7 @@ import {
   getEvolution,
   getGroove,
   grooveToCells,
+  resolveDegreeToChord,
   resolveSectionChords,
   rhythmPatternTotal,
   stepHitsToCells,
@@ -51,6 +53,7 @@ export function ModesPanel() {
   const [activeSectionId, setActiveSectionId] = useState(sections[1]?.id ?? sections[0].id)
   const [grooveId, setGrooveId] = useState('charleston')
   const [rhythmCells, setRhythmCells] = useState(() => grooveToCells(getGroove('charleston'), 4))
+  const [customTokens, setCustomTokens] = useState(['I', 'V', 'vi', 'IV'])
   const [status, setStatus] = useState('')
 
   const genreGroups = useMemo(() => evolutionsByGenre(), [])
@@ -59,6 +62,10 @@ export function ModesPanel() {
   const stepState = useMemo(
     () => cellsToStepHits(rhythmCells, beatsPerBar, STEPS_PER_BAR),
     [rhythmCells, beatsPerBar],
+  )
+  const customChords = useMemo(
+    () => customTokens.map((t) => resolveDegreeToChord(t, key)).filter(Boolean),
+    [customTokens, key],
   )
 
   useEffect(() => () => audioEngine.stopPreview(), [])
@@ -69,11 +76,9 @@ export function ModesPanel() {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)))
   }
 
-  const previewEvolution = (evo: ModeEvolution, pattern = patternBeats, keyOverride = key) => {
-    const chords = evolutionChords(evo, keyOverride)
+  const previewChordNames = (chords: string[], pattern = patternBeats) => {
     if (!chords.length) return
     const slots = pattern.length ? pattern : [beatsPerBar]
-    // Un cycle de grille = une passe des accords (coups en trop = re-attaque)
     const names = slots.map((_, i) => chords[chordIndexForHit(i, slots.length, chords.length)])
     const chordSecs = slots.map((beats) =>
       Math.max(0.35, (beats * 60) / Math.max(40, project.bpm) * 1.25),
@@ -86,17 +91,29 @@ export function ModesPanel() {
     })
   }
 
+  const previewEvolution = (evo: ModeEvolution, pattern = patternBeats, keyOverride = key) => {
+    previewChordNames(evolutionChords(evo, keyOverride), pattern)
+  }
+
   const applyCells = (cells: RhythmCell[], nextGrooveId?: string) => {
     setRhythmCells(cells)
     if (nextGrooveId) setGrooveId(nextGrooveId)
-    const evo = getEvolution(selectedEvo)
-    if (evo) previewEvolution(evo, cells.map((c) => c.beats))
+    const beats = cells.map((c) => c.beats)
+    if (selectedEvo === 'custom') previewChordNames(customChords, beats)
+    else {
+      const evo = getEvolution(selectedEvo)
+      if (evo) previewEvolution(evo, beats)
+    }
   }
 
   const rekeySections = (nextKey: MusicalKey) => {
     setSections((prev) =>
       prev.map((s) => {
         if (!s.progressionId) return s
+        if (s.progressionId === 'custom') {
+          const chords = customTokens.map((t) => resolveDegreeToChord(t, nextKey)).filter(Boolean)
+          return { ...s, customChords: chords.join(' ') }
+        }
         const evo = getEvolution(s.progressionId)
         if (!evo) return s
         return { ...s, customChords: evolutionChords(evo, nextKey).join(' ') }
@@ -108,13 +125,19 @@ export function ModesPanel() {
     const next = { ...key, ...patch }
     setKey(next)
     rekeySections(next)
-    const evo = getEvolution(selectedEvo)
-    if (evo) previewEvolution(evo, patternBeats, next)
+    if (selectedEvo === 'custom') {
+      const chords = customTokens.map((t) => resolveDegreeToChord(t, next)).filter(Boolean)
+      previewChordNames(chords)
+    } else {
+      const evo = getEvolution(selectedEvo)
+      if (evo) previewEvolution(evo, patternBeats, next)
+    }
   }
 
   const assignEvoToActive = (evo: ModeEvolution) => {
     const chords = chordsOf(evo)
     setSelectedEvo(evo.id)
+    setCustomTokens([...evo.degrees])
     setSections((prev) =>
       prev.map((s) =>
         s.id === activeSectionId
@@ -123,6 +146,21 @@ export function ModesPanel() {
       ),
     )
     previewEvolution(evo)
+  }
+
+  const assignCustomToActive = () => {
+    if (!customChords.length) return
+    setSelectedEvo('custom')
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === activeSectionId
+          ? { ...s, progressionId: 'custom', customChords: customChords.join(' ') }
+          : s,
+      ),
+    )
+    previewChordNames(customChords)
+    setStatus('Évolution perso → section')
+    window.setTimeout(() => setStatus(''), 2500)
   }
 
   const pickGroove = (id: string) => {
@@ -138,15 +176,21 @@ export function ModesPanel() {
 
   const addSection = () => {
     const id = uid('sec')
-    const evo = getEvolution(selectedEvo)
+    const evo = selectedEvo === 'custom' ? null : getEvolution(selectedEvo)
+    const chords =
+      selectedEvo === 'custom'
+        ? customChords
+        : evo
+          ? evolutionChords(evo, key)
+          : []
     setSections((prev) => [
       ...prev,
       {
         id,
         kind: 'couplet',
         bars: 4,
-        progressionId: selectedEvo,
-        customChords: evo ? evolutionChords(evo, key).join(' ') : '',
+        progressionId: selectedEvo === 'custom' || evo ? selectedEvo : null,
+        customChords: chords.join(' '),
       },
     ])
     setActiveSectionId(id)
@@ -309,8 +353,39 @@ export function ModesPanel() {
             </div>
           </div>
 
+          <EvolutionEditor
+            musicalKey={key}
+            tokens={customTokens}
+            onChange={(next) => {
+              setCustomTokens(next)
+              setSelectedEvo('custom')
+            }}
+            onPreview={(chords) => previewChordNames(chords)}
+            onPreviewOne={(chord) => previewChordNames([chord], [beatsPerBar])}
+            onAssign={assignCustomToActive}
+          />
+
           <div className="modes-section-title">Bibliothèque — par genre</div>
           <div className="modes-lib-list">
+            {selectedEvo === 'custom' && customChords.length > 0 && (
+              <div className="modes-genre">
+                <div className="modes-genre-title">Perso</div>
+                <button
+                  type="button"
+                  className="modes-evo is-active"
+                  onClick={assignCustomToActive}
+                  title="Évolution personnalisée"
+                >
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-medium text-sm">Évolution libre</span>
+                    <span className="text-[10px] text-[var(--muted)] mono">{customChords.length}</span>
+                  </div>
+                  <div className="text-[10px] text-[var(--muted)] mt-0.5">Éditeur ci-dessus</div>
+                  <div className="modes-degrees mono mt-1.5">{customTokens.join(' – ')}</div>
+                  <div className="modes-chords mono mt-1">{customChords.join(' · ')}</div>
+                </button>
+              </div>
+            )}
             {genreGroups.map((group) => (
               <div key={group.genre} className="modes-genre">
                 <div className="modes-genre-title">{group.label}</div>
