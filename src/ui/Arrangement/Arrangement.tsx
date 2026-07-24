@@ -595,7 +595,7 @@ export function Arrangement() {
         </div>
       </div>
       <div className="flex flex-1 min-h-0 min-w-0">
-        <div className="w-52 shrink-0 border-r border-[var(--line)] overflow-y-auto">
+        <div className="w-60 shrink-0 border-r border-[var(--line)] overflow-y-auto">
           <div className="h-7 border-b border-[var(--line)] flex items-center px-1 gap-0.5">
             {autoModes.map((mode) => (
               <button
@@ -631,7 +631,7 @@ export function Arrangement() {
                 })
               }
               onDoubleClick={(e) => {
-                if ((e.target as HTMLElement).closest('button')) return
+                if ((e.target as HTMLElement).closest('button, input')) return
                 e.preventDefault()
                 toggleTrackCompact(track)
               }}
@@ -666,13 +666,47 @@ export function Arrangement() {
                   )}
                 </div>
                 <div className="arr-track-meta flex items-center gap-1 min-w-0">
-                  <span className="text-[10px] text-[var(--muted)] mono truncate flex-1 min-w-0">
+                  <span className="text-[10px] text-[var(--muted)] mono truncate min-w-0 max-w-[4.5rem]" title={
+                    track.type === 'midi'
+                      ? track.instrumentId
+                        ? getInstrument(track.instrumentId)?.name ?? track.instrumentId
+                        : 'vide'
+                      : 'audio'
+                  }>
                     {track.type === 'midi'
                       ? track.instrumentId
                         ? getInstrument(track.instrumentId)?.name ?? track.instrumentId
-                        : 'vide · déposer un instrument'
+                        : 'vide'
                       : 'audio'}
                   </span>
+                  <div
+                    className="arr-track-mix flex flex-col gap-0.5 flex-1 min-w-[4.5rem]"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <label className="arr-mix-row" title={`Volume ${track.volume.toFixed(2)}`}>
+                      <span>Vol</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1.5}
+                        step={0.01}
+                        value={track.volume}
+                        onChange={(e) => updateTrack(track.id, { volume: Number(e.target.value) })}
+                      />
+                    </label>
+                    <label className="arr-mix-row" title={`Pan ${track.pan.toFixed(2)}`}>
+                      <span>Pan</span>
+                      <input
+                        type="range"
+                        min={-1}
+                        max={1}
+                        step={0.01}
+                        value={track.pan}
+                        onChange={(e) => updateTrack(track.id, { pan: Number(e.target.value) })}
+                      />
+                    </label>
+                  </div>
                   <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       type="button"

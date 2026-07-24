@@ -384,6 +384,28 @@ body.is-splitting-col * {
 .arr-track-head.is-compact .arr-fx-chips {
   display: none;
 }
+.arr-mix-row {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.arr-mix-row span {
+  width: 1.4rem;
+  flex-shrink: 0;
+}
+.arr-mix-row input[type='range'] {
+  flex: 1;
+  min-width: 0;
+  height: 0.7rem;
+  margin: 0;
+  padding: 0;
+}
 .arr-track-head.is-compact .w-1 {
   margin-top: 0.15rem;
   margin-bottom: 0.15rem;

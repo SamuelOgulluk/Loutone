@@ -3,7 +3,6 @@ import { TransportBar } from '@/ui/TransportBar/TransportBar'
 import { Browser } from '@/ui/Browser/Browser'
 import { Arrangement } from '@/ui/Arrangement/Arrangement'
 import { PianoRoll } from '@/ui/MidiEditor/PianoRoll'
-import { Mixer } from '@/ui/Mixer/Mixer'
 import { Inspector } from '@/ui/Inspector/Inspector'
 import { ModesPanel } from '@/ui/ModesPanel/ModesPanel'
 import { Split } from '@/ui/layout/Split'
@@ -55,23 +54,12 @@ export function App() {
           className="flex-1 min-h-0 min-w-0"
           axis="row"
           mode="sides-px"
-          storageKey="arrange-main-v2"
-          initial={[280, 280]}
-          min={[200, 200]}
-          max={[520, 480]}
+          storageKey="arrange-main-v3"
+          initial={[220, 280]}
+          min={[160, 200]}
+          max={[420, 480]}
         >
-          <Split
-            className="h-full"
-            axis="column"
-            mode="percent"
-            storageKey="arrange-left"
-            initial={[55, 45]}
-            min={[25, 22]}
-            max={[78, 75]}
-          >
-            <Browser />
-            <Mixer />
-          </Split>
+          <Browser />
           <div className="h-full min-h-0 min-w-0 overflow-hidden">
             {pianoRollOpen ? (
               <Split
