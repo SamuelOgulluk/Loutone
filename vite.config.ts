@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 
 export default defineConfig({
-  // Chemins relatifs sur Pages : marche avant/après le rename lutra → loutone
+  // Pages : chemins relatifs (le repo s'appelle Loutone, pas lutra)
   base: process.env.GITHUB_PAGES === 'true' ? './' : '/',
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -14,7 +14,13 @@ export default defineConfig({
   },
   clearScreen: false,
   server: {
+    host: true,
     port: 1420,
+    strictPort: true,
+  },
+  preview: {
+    host: true,
+    port: 4173,
     strictPort: true,
   },
   envPrefix: ['VITE_', 'TAURI_'],
