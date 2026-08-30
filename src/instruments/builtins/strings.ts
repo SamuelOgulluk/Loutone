@@ -5,7 +5,7 @@ registerSampleInstrument({
   id: 'strings',
   name: 'Cordes',
   category: 'strings',
-  voice: { gain: 0.55, attack: 0.12, release: 0.45, filterFreq: 3200 },
+  voice: { gain: 0.58, attack: 0.12, release: 0.55, filterFreq: 5400, loop: true },
   fallback: (ctx, dest, pitch, vel, when, dur) => {
     const a = makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'sawtooth',
@@ -34,7 +34,7 @@ registerSampleInstrument({
   id: 'strings-cello',
   name: 'Violoncelle',
   category: 'strings',
-  voice: { gain: 0.7, attack: 0.1, release: 0.4, filterFreq: 2400 },
+  voice: { gain: 0.72, attack: 0.1, release: 0.5, filterFreq: 4200, loop: true },
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'sawtooth',

@@ -89,7 +89,7 @@ registerSampleInstrument({
   id: 'organ',
   name: 'Orgue',
   category: 'keys',
-  voice: { gain: 0.7, attack: 0.02, release: 0.08, filterFreq: 4000 },
+  voice: { gain: 0.78, attack: 0.02, release: 0.08, filterFreq: 6200, loop: true },
   fallback: (ctx, dest, pitch, vel, when, dur) => {
     const a = makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'square',

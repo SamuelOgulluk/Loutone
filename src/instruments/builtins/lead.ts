@@ -5,7 +5,7 @@ registerSampleInstrument({
   id: 'lead',
   name: 'Lead',
   category: 'lead',
-  voice: { gain: 0.7, attack: 0.015, release: 0.14, filterFreq: 4500, filterQ: 1.5 },
+  voice: { gain: 0.72, attack: 0.015, release: 0.18, filterFreq: 6800, filterQ: 0.8, loop: true },
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'square',
@@ -23,7 +23,7 @@ registerSampleInstrument({
   id: 'lead-saw',
   name: 'Lead saw',
   category: 'lead',
-  voice: { gain: 0.65, attack: 0.01, release: 0.12, filterFreq: 5000, filterQ: 1.2 },
+  voice: { gain: 0.68, attack: 0.01, release: 0.16, filterFreq: 7200, filterQ: 0.7, loop: true },
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'sawtooth',
@@ -41,7 +41,7 @@ registerSampleInstrument({
   id: 'lead-pluck',
   name: 'Lead pluck',
   category: 'lead',
-  voice: { gain: 0.75, attack: 0.002, release: 0.15, filterFreq: 6000, filterQ: 2 },
+  voice: { gain: 0.78, attack: 0.002, release: 0.22, filterFreq: 7600, filterQ: 1.1 },
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'triangle',

@@ -28,8 +28,11 @@ function ensureDecodeCtx() {
   return decodeCtx
 }
 
+const LOCAL_PACKS = extraMaps as PackMap
+
 function packUrl(packId: string, file: string) {
   const local = `${LOCAL}/${packId}/${file}`
+  if (LOCAL_PACKS[packId]) return [local]
   const remote = `${CDN}/${packId}/${file}`
   return preferLocal ? [local, remote] : [remote, local]
 }
@@ -181,32 +184,34 @@ export function getDrumBuffer(name: string) {
 }
 
 export const INSTRUMENT_TO_PACK: Record<string, { pack: string; minify?: number }> = {
-  piano: { pack: 'piano', minify: 1 },
+  piano: { pack: 'piano-upright' },
   epiano: { pack: 'epiano-dx' },
-  organ: { pack: 'organ' },
-  bass: { pack: 'bass-electric' },
-  'bass-sub': { pack: 'contrabass' },
-  'bass-pluck': { pack: 'bass-electric' },
-  'guitar-clean': { pack: 'guitar-acoustic' },
-  'guitar-crunch': { pack: 'guitar-electric' },
-  'guitar-lead': { pack: 'guitar-electric' },
+  organ: { pack: 'organ-drawbar' },
+  bass: { pack: 'bass-yr' },
+  'bass-sub': { pack: 'bass-lately' },
+  'bass-pluck': { pack: 'bass-dx' },
+  'guitar-clean': { pack: 'guitar-spanish' },
+  'guitar-crunch': { pack: 'guitar-dist1' },
+  'guitar-lead': { pack: 'guitar-dist2' },
   pads: { pack: 'pad-newage' },
   'pads-warm': { pack: 'pad-newage' },
-  'pads-bright': { pack: 'pad-newage' },
+  'pads-bright': { pack: 'pad-sweep' },
   drums: { pack: 'drums-kit' },
-  lead: { pack: 'saxophone' },
-  'lead-saw': { pack: 'trumpet' },
-  'lead-pluck': { pack: 'flute' },
-  strings: { pack: 'violin' },
-  'strings-cello': { pack: 'cello' },
+  lead: { pack: 'lead-calliope' },
+  'lead-saw': { pack: 'lead-square' },
+  'lead-pluck': { pack: 'lead-crystal' },
+  strings: { pack: 'strings-1' },
+  'strings-cello': { pack: 'strings-2' },
 }
 
 export async function preloadEssentialSamples() {
   await Promise.all([
-    loadSamplePack('piano', { minify: 2, concurrency: 8 }),
+    loadSamplePack('piano-upright', { minify: 2, concurrency: 8 }),
     loadSamplePack('epiano-dx', { concurrency: 6 }),
     loadSamplePack('pad-newage', { concurrency: 6 }),
-    loadSamplePack('bass-electric', { concurrency: 6 }),
+    loadSamplePack('bass-yr', { concurrency: 6 }),
+    loadSamplePack('guitar-spanish', { minify: 2, concurrency: 8 }),
+    loadSamplePack('strings-1', { concurrency: 6 }),
     loadDrumHits(),
   ])
 }

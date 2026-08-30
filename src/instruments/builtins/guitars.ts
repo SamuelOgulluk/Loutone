@@ -43,9 +43,9 @@ registerSampleInstrument({
     gain: 0.7,
     attack: 0.005,
     release: 0.16,
-    filterFreq: 2600 + pitch * 6,
-    filterQ: 1.8,
-    drive: 0.55,
+    filterFreq: 4800 + pitch * 8,
+    filterQ: 1.1,
+    drive: 0.22,
   }),
   fallback: (ctx, dest, pitch, vel, when, dur) => {
     const a = makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
@@ -80,9 +80,9 @@ registerSampleInstrument({
     gain: 0.65,
     attack: 0.015,
     release: 0.28,
-    filterFreq: 3800,
-    filterQ: 2.2,
-    drive: 0.35,
+    filterFreq: 5200,
+    filterQ: 1.2,
+    drive: 0.18,
   },
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {

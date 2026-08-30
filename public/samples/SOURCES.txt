@@ -1,9 +1,45 @@
-Samples CC0 1.0 (domaine public) — FreePats, Roberto / zenvoid.org
+Samples — FreePats / zenvoid.org
 
-epiano-dx  : https://github.com/freepats/fm-piano1
-             DX7 « E. Piano 1 » rendu depuis Hexter
-pad-newage : https://github.com/freepats/new-age
-             pad GM « New Age »
-
-Licence : Creative Commons CC0 1.0
+CC0 1.0 (domaine public)
 https://creativecommons.org/publicdomain/zero/1.0/
+
+piano-upright  : https://github.com/freepats/upright-piano-KW
+                 piano droit KW, vélocité haute
+epiano-dx      : https://github.com/freepats/fm-piano1
+                 DX7 « E. Piano 1 » rendu depuis Hexter
+organ-drawbar  : https://freepats.zenvoid.org/Organ/electric-organ.html
+                 Drawbar Organ Emulation (setBfree)
+bass-yr        : https://github.com/freepats/electric-bass-YR
+                 basse doigtée YR
+bass-lately    : https://github.com/freepats/lately-bass
+                 DX7 « Lately Bass »
+bass-dx        : https://github.com/freepats/synth-bass-2
+                 DX7 « Bass 1 »
+guitar-spanish : https://github.com/freepats/spanish-classical-guitar
+                 guitare classique espagnole
+guitar-dist1   : https://github.com/freepats/electric-guitar-FSBS-dist1
+                 FSBS disto 1 (une prise par note)
+guitar-dist2   : https://github.com/freepats/electric-guitar-FSBS-dist2
+                 FSBS disto 2 (une prise par note)
+pad-newage     : https://github.com/freepats/new-age
+                 pad GM « New Age »
+pad-sweep      : https://github.com/freepats/sweep-pad
+                 pad GM « Sweep »
+lead-calliope  : https://github.com/freepats/synth-calliope
+                 DX7 Calliope
+lead-square    : https://github.com/freepats/synth-square
+                 DX7 Square Lead
+lead-crystal   : https://github.com/freepats/synth-crystal
+                 DX7 Crystal
+strings-1      : https://github.com/freepats/synth-strings-1
+                 DX7 Synth Strings 1
+strings-2      : https://github.com/freepats/synth-strings-2
+                 DX7 Synth Strings 2
+
+CC BY 4.0 (attribution requise)
+https://creativecommons.org/licenses/by/4.0/
+
+drums-kit      : https://github.com/freepats/muldjordkit
+                 Muldjord Kit — Lars Muldjord / DrumGizmo.org
+                 Drum samples provided by DrumGizmo.org
+                 kick / snare / hihat / toms

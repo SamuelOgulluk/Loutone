@@ -68,12 +68,11 @@ src-tauri/                 # Shell Tauri 2
 - Effets + Inspector + Mixer avec meters
 - Save/load `.softdaw.json` (FS Tauri ou téléchargement navigateur)
 
-## Samples (CC0)
+## Samples
 
-Le piano électrique et les pads de la démo viennent de [FreePats](https://freepats.zenvoid.org/) (CC0, domaine public) :
+Tous les instruments embarquent des samples locaux (MP3 mono 96 kHz) dans `public/samples/`.
+Sources et licences : `public/samples/SOURCES.txt`.
 
-- Rhodes / DX7 E.Piano : [fm-piano1](https://github.com/freepats/fm-piano1) (Hexter)
-- Pad warm : [new-age](https://github.com/freepats/new-age)
+Presque tout vient de [FreePats](https://freepats.zenvoid.org/) en **CC0** (domaine public) : piano droit KW, DX7 Rhodes / basses / leads / cordes, orgue Hammond (setBfree), guitare classique, FSBS disto, pads New Age et Sweep.
 
-Fichiers dans `public/samples/` — détails dans `public/samples/SOURCES.txt`.
-Les autres instruments restent sur [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments) (MIT).
+La batterie utilise le [Muldjord Kit](https://github.com/freepats/muldjordkit) de Lars Muldjord (**CC BY 4.0**). Drum samples provided by DrumGizmo.org.

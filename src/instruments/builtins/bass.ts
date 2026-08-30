@@ -9,8 +9,8 @@ registerSampleInstrument({
     gain: 1.05,
     attack: 0.008,
     release: 0.1,
-    filterFreq: 900 + (pitch - 36) * 10,
-    filterQ: 1.2,
+    filterFreq: 1800 + (pitch - 36) * 18,
+    filterQ: 0.8,
   }),
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
@@ -29,7 +29,7 @@ registerSampleInstrument({
   id: 'bass-sub',
   name: 'Basse sub',
   category: 'bass',
-  voice: { gain: 1.15, attack: 0.02, release: 0.14, filterFreq: 400 },
+  voice: { gain: 1.12, attack: 0.02, release: 0.18, filterFreq: 900 },
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
       type: 'sine',
@@ -50,8 +50,8 @@ registerSampleInstrument({
     gain: 1,
     attack: 0.002,
     release: 0.12,
-    filterFreq: 1400 + (pitch - 36) * 12,
-    filterQ: 2,
+    filterFreq: 2800 + (pitch - 36) * 16,
+    filterQ: 1.1,
   }),
   fallback: (ctx, dest, pitch, vel, when, dur) =>
     makeSynthVoice(ctx, dest, pitch, vel, when, dur, {
