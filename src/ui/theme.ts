@@ -1,23 +1,23 @@
 export const THEME_IDS = [
-  'studio-amber',
-  'studio-graphite',
-  'tape-warm',
-  'night-steel',
-  'ink-lime',
+  'river-dusk',
+  'studio-ink',
+  'paper-score',
+  'vinyl-night',
+  'harbor-glow',
 ] as const
 
 export type ThemeId = (typeof THEME_IDS)[number]
 
 export const THEME_LABELS = {
-  'studio-amber': 'Studio Ambre',
-  'studio-graphite': 'Studio Turquoise',
-  'tape-warm': 'Tape Warm',
-  'night-steel': 'Night Steel',
-  'ink-lime': 'Encre & citron',
+  'river-dusk': 'Rivière',
+  'studio-ink': 'Encre',
+  'paper-score': 'Partition',
+  'vinyl-night': 'Vinyle',
+  'harbor-glow': 'Quai',
 } as const
 
-const STORAGE_KEY = 'soft-theme'
-const DEFAULT_THEME = 'studio-amber'
+const STORAGE_KEY = 'loutone-theme'
+const DEFAULT_THEME = 'river-dusk'
 
 export function isThemeId(value: string): value is ThemeId {
   return (THEME_IDS as readonly string[]).includes(value)
