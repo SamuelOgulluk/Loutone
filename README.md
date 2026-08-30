@@ -2,7 +2,7 @@
 
 Application DAW desktop locale (Tauri 2 + Vite + React + Web Audio). Nom inspiré des loutres + du son (*tone*). Pas d'IA en V1.
 
-**Demo en ligne :** https://samuelogulluk.github.io/lutra/
+**Demo en ligne :** https://samuelogulluk.github.io/loutone/ (l’ancienne URL `/lutra/` redirige après le rename du dépôt)
 
 ## Prérequis
 
