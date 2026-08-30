@@ -1,12 +1,13 @@
 import type { MidiNote, Project, Track } from '@/types/project'
 import { TRACK_COLORS, uid } from '@/types/project'
 import { createTrackEffect } from '@/audio/effects'
+import type { EffectType } from '@/types/project'
 
 export function createEmptyProject(name = 'Sans titre'): Project {
   return {
     version: 1,
     name,
-    bpm: 120,
+    bpm: 84,
     timeSignature: { numerator: 4, denominator: 4 },
     loopEnabled: true,
     loopStart: 0,
@@ -20,8 +21,14 @@ function note(pitch: number, start: number, duration: number, velocity = 90): Mi
   return { id: uid('note'), pitch, start, duration, velocity }
 }
 
-function chord(pitches: number[], start: number, duration: number, velocity = 78) {
-  return pitches.map((p, i) => note(p, start, duration, Math.max(50, velocity - i * 4)))
+function chord(pitches: number[], start: number, duration: number, velocity = 72) {
+  return pitches.map((p, i) => note(p, start, duration, Math.max(48, velocity - i * 3)))
+}
+
+function fx(type: EffectType, extra: Record<string, number | boolean> = {}) {
+  const e = createTrackEffect(type)
+  Object.assign(e.params, extra)
+  return e
 }
 
 function midiTrack(
@@ -38,7 +45,7 @@ function midiTrack(
     length?: number
   } = {},
 ): Track {
-  const length = opts.length ?? 32
+  const length = opts.length ?? 64
   return {
     id: uid('trk'),
     name,
@@ -68,158 +75,139 @@ function midiTrack(
   }
 }
 
-// Progression Am – F – C – G (×2) · 32 beats @ ~100 BPM
-const PROG = [
-  { root: 57, chord: [57, 60, 64, 67], bass: 45 }, // Am7
-  { root: 53, chord: [53, 57, 60, 65], bass: 41 }, // F
-  { root: 48, chord: [48, 52, 55, 60], bass: 36 }, // C
-  { root: 55, chord: [55, 59, 62, 67], bass: 43 }, // G
-]
+// i – iv – bVII – III – bVI – iiø – V – i (Cm), 16 mesures @ 84 BPM
+const BARS = [
+  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
+  { bass: 41, chord: [53, 56, 60, 63] }, // Fm7
+  { bass: 34, chord: [50, 56, 60, 65] }, // Bb13
+  { bass: 39, chord: [55, 58, 62, 65] }, // Ebmaj9
+  { bass: 44, chord: [48, 51, 55, 60] }, // Abmaj7
+  { bass: 38, chord: [50, 53, 56, 60] }, // Dm7b5
+  { bass: 43, chord: [48, 53, 55, 60] }, // G7sus
+  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
+  { bass: 36, chord: [51, 55, 58, 67] }, // Cm11
+  { bass: 41, chord: [53, 56, 60, 65] }, // Fm9
+  { bass: 34, chord: [50, 55, 56, 60] }, // Bb9
+  { bass: 39, chord: [53, 55, 58, 62] }, // Ebmaj7
+  { bass: 44, chord: [48, 51, 55, 63] }, // Abmaj9
+  { bass: 43, chord: [47, 53, 55, 62] }, // G7
+  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
+  { bass: 36, chord: [48, 55, 58, 63] }, // Cm (land)
+] as const
 
 function buildDrums() {
   const notes: MidiNote[] = []
-  for (let b = 0; b < 32; b++) {
-    const barBeat = b % 4
-    // Kick
-    if (barBeat === 0 || barBeat === 2) {
-      notes.push(note(36, b, 0.22, barBeat === 0 ? 118 : 100))
+  for (let bar = 0; bar < 16; bar++) {
+    const s = bar * 4
+    const open = bar >= 8
+    notes.push(note(36, s, 0.28, open ? 112 : 100))
+    notes.push(note(36, s + 2.75, 0.18, open ? 92 : 80))
+    if (open && bar % 2 === 0) notes.push(note(36, s + 1.75, 0.12, 70))
+    notes.push(note(38, s + 1, 0.16, 102))
+    notes.push(note(38, s + 3, 0.16, 96))
+    if (bar % 2 === 1) notes.push(note(38, s + 2.5, 0.08, 30))
+    const hats = [58, 34, 48, 32, 54, 36, 46, 30]
+    for (let i = 0; i < 8; i++) {
+      if (bar < 2 && i % 2 === 1) continue
+      notes.push(note(42, s + i * 0.5, 0.08, hats[i] + (open ? 6 : 0)))
     }
-    if (barBeat === 0) notes.push(note(36, b + 0.75, 0.12, 72)) // syncopation
-    // Snare
-    if (barBeat === 1 || barBeat === 3) {
-      notes.push(note(38, b, 0.16, 108))
-      if (b >= 16 && barBeat === 3) notes.push(note(38, b + 0.5, 0.1, 70)) // fill hint
-    }
-    // Ghost snare
-    if (barBeat === 0 || barBeat === 2) notes.push(note(38, b + 0.5, 0.08, 42))
-    // Hats
-    notes.push(note(42, b, 0.08, barBeat % 2 === 0 ? 78 : 58))
-    notes.push(note(42, b + 0.5, 0.08, 48))
-    if (b % 8 === 7) notes.push(note(46, b + 0.75, 0.12, 85)) // open hat
-    // Tom fill last bar
-    if (b >= 30) {
-      notes.push(note(50, b, 0.12, 90))
-      notes.push(note(47, b + 0.33, 0.12, 88))
-      notes.push(note(45, b + 0.66, 0.14, 92))
-    }
+    if (bar === 7 || bar === 15) notes.push(note(42, s + 3.5, 0.2, 88))
   }
   return notes
 }
 
 function buildBass() {
   const notes: MidiNote[] = []
-  for (let i = 0; i < 8; i++) {
-    const start = i * 4
-    const { bass } = PROG[i % 4]
-    notes.push(note(bass, start, 1.4, 112))
-    notes.push(note(bass, start + 1.5, 0.4, 88))
-    notes.push(note(bass + 7, start + 2, 0.9, 100))
-    notes.push(note(bass, start + 3, 0.45, 95))
-    notes.push(note(bass + 5, start + 3.5, 0.4, 90))
+  for (let i = 0; i < 16; i++) {
+    const s = i * 4
+    const root = BARS[i].bass
+    const next = BARS[(i + 1) % 16].bass
+    if (i === 7 || i === 15) {
+      notes.push(note(root, s, 3.4, 108))
+      continue
+    }
+    notes.push(note(root, s, 1.15, 110))
+    notes.push(note(root, s + 1.5, 0.32, 76))
+    const fifth = root + 7
+    notes.push(note(fifth > 50 ? root + 5 : fifth, s + 2.5, 0.7, 94))
+    const approach = next > root ? next - 2 : next + 1
+    notes.push(note(approach, s + 3.55, 0.38, 84))
   }
   return notes
 }
 
 function buildKeys() {
   const notes: MidiNote[] = []
-  for (let i = 0; i < 8; i++) {
-    const start = i * 4
-    const c = PROG[i % 4].chord
-    // Comping rhythm
-    notes.push(...chord(c, start, 1.1, 82))
-    notes.push(...chord(c, start + 1.5, 0.45, 68))
-    notes.push(...chord([c[0], c[2], c[3]], start + 2.5, 0.7, 74))
-    if (i % 2 === 1) notes.push(...chord(c.map((p) => p + 12), start + 3.25, 0.5, 55))
-  }
-  return notes
-}
-
-function buildGuitar() {
-  const notes: MidiNote[] = []
-  const pattern = [0, 2, 1, 3, 2, 0, 3, 1]
-  for (let i = 0; i < 8; i++) {
-    const start = i * 4
-    const c = PROG[i % 4].chord
-    for (let s = 0; s < 8; s++) {
-      const p = c[pattern[s] % c.length] + (s % 4 === 3 ? 12 : 0)
-      notes.push(note(p, start + s * 0.5, 0.42, 58 + (s % 2) * 10))
+  for (let i = 0; i < 16; i++) {
+    const s = i * 4
+    const c = [...BARS[i].chord]
+    notes.push(...chord(c, s, 1.65, 76))
+    if (i === 7 || i === 15) {
+      notes.push(...chord(c, s + 2, 1.8, 62))
+      continue
     }
+    notes.push(...chord([c[0], c[2]], s + 2, 0.35, 64))
+    notes.push(...chord(c, s + 2.75, 1.05, 70))
   }
   return notes
 }
 
 function buildPads() {
   const notes: MidiNote[] = []
-  for (let i = 0; i < 8; i++) {
-    const start = i * 4
-    const c = PROG[i % 4].chord
-    notes.push(...chord([c[0] - 12, c[1], c[2], c[3]], start, 3.9, 52))
+  for (let i = 0; i < 16; i++) {
+    const c = BARS[i].chord
+    notes.push(...chord([c[0] - 12, c[1], c[2]], i * 4, 3.85, 46))
   }
+  return notes
+}
+
+function buildGuitar() {
+  const notes: MidiNote[] = []
+  for (let i = 8; i < 16; i++) {
+    const s = i * 4
+    const c = BARS[i].chord
+    notes.push(note(c[1] + 12, s + 1, 0.28, 52))
+    notes.push(note(c[2] + 12, s + 1.12, 0.22, 44))
+    notes.push(note(c[0] + 12, s + 3, 0.32, 50))
+    notes.push(note(c[2] + 12, s + 3.15, 0.24, 42))
+  }
+  return notes
+}
+
+function buildMelody() {
+  const notes: MidiNote[] = []
+  const line = [
+    [67, 16, 1.4, 78], [70, 17.6, 0.45, 72], [72, 18.2, 1.5, 82],
+    [70, 20, 0.7, 74], [68, 20.9, 0.9, 70], [67, 22, 1.6, 76],
+    [65, 24.4, 0.55, 68], [67, 25.1, 0.45, 72], [68, 25.7, 1.7, 78],
+    [67, 28, 1.8, 74], [63, 30.2, 1.5, 70],
+    [72, 36, 0.45, 80], [70, 36.55, 0.4, 74], [67, 37.1, 1.15, 78],
+    [65, 38.5, 1.2, 72], [63, 40, 1.4, 70], [65, 41.6, 0.45, 68],
+    [67, 42.2, 1.5, 76], [70, 44.3, 0.65, 80], [72, 45.1, 0.5, 78],
+    [74, 45.75, 2.0, 82], [72, 48, 1.15, 76], [70, 49.4, 2.1, 72],
+    [68, 52, 0.95, 68], [67, 53.15, 0.7, 70], [65, 54.1, 1.4, 66],
+    [67, 56.4, 2.4, 74], [63, 60, 3.5, 70],
+  ] as const
+  for (const [pitch, start, dur, vel] of line) notes.push(note(pitch, start, dur, vel))
   return notes
 }
 
 function buildStrings() {
   const notes: MidiNote[] = []
-  // Counter-melody in higher register
-  const line = [
-    [64, 0, 1.5], [67, 1.5, 1], [69, 2.5, 1.5],
-    [65, 4, 1.5], [64, 5.5, 1], [60, 6.5, 1.5],
-    [67, 8, 2], [64, 10, 1], [60, 11, 1],
-    [62, 12, 1.5], [59, 13.5, 1], [55, 14.5, 1.5],
-  ] as const
-  for (const [pitch, start, dur] of line) {
-    notes.push(note(pitch, start, dur, 70))
-    notes.push(note(pitch, start + 16, dur, 72))
-  }
-  // Soft pad doubles
-  for (let i = 0; i < 8; i++) {
-    const c = PROG[i % 4].chord
-    notes.push(note(c[2], i * 4, 3.8, 40))
-  }
-  return notes
-}
-
-function buildLead() {
-  const notes: MidiNote[] = []
-  // Hook enters after 8 beats
-  const hook = [
-    [72, 8, 0.7], [74, 8.75, 0.45], [76, 9.25, 1.2],
-    [74, 10.5, 0.5], [72, 11, 0.9],
-    [71, 12, 0.7], [72, 12.75, 0.5], [74, 13.25, 0.9],
-    [76, 14.25, 0.6], [79, 14.9, 1.1],
-    [76, 16, 0.8], [74, 16.85, 0.5], [72, 17.4, 1.3],
-    [69, 18.8, 0.7], [67, 19.6, 1.2],
-    [72, 21, 0.6], [74, 21.7, 0.5], [76, 22.3, 1.4],
-    [74, 24, 0.8], [72, 24.9, 0.6], [71, 25.6, 0.9],
-    [69, 26.6, 0.7], [67, 27.4, 1.1],
-    [64, 28.6, 1.2], [67, 29.9, 0.8], [69, 30.8, 1.1],
-  ] as const
-  for (const [pitch, start, dur] of hook) {
-    notes.push(note(pitch, start, dur, 88))
-  }
-  return notes
-}
-
-function buildPluck() {
-  const notes: MidiNote[] = []
-  for (let i = 0; i < 8; i++) {
-    const start = i * 4
-    const c = PROG[i % 4].chord
-    // Offbeat plucks
-    for (const off of [0.5, 1.5, 2.5, 3.5]) {
-      notes.push(note(c[1] + 12, start + off, 0.22, 62))
-      notes.push(note(c[2] + 12, start + off + 0.25, 0.18, 50))
-    }
+  for (let i = 8; i < 16; i++) {
+    const c = BARS[i].chord
+    notes.push(note(c[2], i * 4, 3.7, 38))
+    notes.push(note(c[c.length - 1], i * 4 + 0.05, 3.6, 32))
   }
   return notes
 }
 
 export function createDemoProject(): Project {
-  const length = 32
+  const length = 64
   return {
     version: 1,
-    name: 'Démo Loutone — Rivière',
-    bpm: 100,
+    name: 'Démo Loutone — Fenêtre',
+    bpm: 84,
     timeSignature: { numerator: 4, denominator: 4 },
     loopEnabled: true,
     loopStart: 0,
@@ -227,66 +215,58 @@ export function createDemoProject(): Project {
     lengthBeats: 64,
     tracks: [
       midiTrack('Batterie', TRACK_COLORS[2], 'drums', buildDrums(), {
-        volume: 0.82,
-        height: 68,
-        clipName: 'Groove',
+        volume: 0.74,
+        height: 66,
+        clipName: 'Pocket',
         length,
-        effects: [createTrackEffect('compressor'), createTrackEffect('eq')],
+        effects: [fx('compressor', { threshold: -16, ratio: 2.4 }), fx('eq', { high: 2 })],
       }),
       midiTrack('Basse', TRACK_COLORS[1], 'bass', buildBass(), {
-        volume: 0.92,
-        height: 64,
+        volume: 0.9,
+        height: 62,
         clipName: 'Ligne',
         length,
-        effects: [createTrackEffect('compressor'), createTrackEffect('saturator')],
+        effects: [fx('compressor', { threshold: -14, ratio: 3 }), fx('saturator', { drive: 0.22, mix: 0.28 })],
       }),
-      midiTrack('Piano électrique', TRACK_COLORS[0], 'epiano', buildKeys(), {
-        volume: 0.78,
-        pan: -0.08,
-        height: 72,
-        clipName: 'Accords',
+      midiTrack('Rhodes', TRACK_COLORS[0], 'epiano', buildKeys(), {
+        volume: 0.72,
+        pan: -0.06,
+        height: 70,
+        clipName: 'Voicings',
         length,
-        effects: [createTrackEffect('reverb'), createTrackEffect('chorus')],
-      }),
-      midiTrack('Guitare', TRACK_COLORS[5] ?? TRACK_COLORS[4], 'guitar-clean', buildGuitar(), {
-        volume: 0.58,
-        pan: 0.22,
-        height: 60,
-        clipName: 'Arpèges',
-        length,
-        effects: [createTrackEffect('reverb'), createTrackEffect('eq')],
+        effects: [fx('reverb', { mix: 0.32, decay: 2.8 }), fx('chorus', { mix: 0.22, rate: 0.22, depth: 0.4 })],
       }),
       midiTrack('Pads', TRACK_COLORS[3], 'pads-warm', buildPads(), {
-        volume: 0.42,
-        pan: -0.12,
-        height: 56,
-        clipName: 'Atmos',
+        volume: 0.3,
+        pan: -0.1,
+        height: 52,
+        clipName: 'Air',
         length,
-        effects: [createTrackEffect('reverb'), createTrackEffect('chorus')],
+        effects: [fx('reverb', { mix: 0.55, decay: 3.6 }), fx('chorus', { mix: 0.18 })],
+      }),
+      midiTrack('Guitare', TRACK_COLORS[5] ?? TRACK_COLORS[4], 'guitar-clean', buildGuitar(), {
+        volume: 0.42,
+        pan: 0.28,
+        height: 54,
+        clipName: 'Réponses',
+        length,
+        effects: [fx('reverb', { mix: 0.4, decay: 2.4 }), fx('echo', { mix: 0.18, time: 0.36, feedback: 0.22 })],
+      }),
+      midiTrack('Mélodie', TRACK_COLORS[7] ?? TRACK_COLORS[0], 'piano', buildMelody(), {
+        volume: 0.64,
+        pan: 0.04,
+        height: 64,
+        clipName: 'Thème',
+        length,
+        effects: [fx('reverb', { mix: 0.28, decay: 2.6 }), fx('eq', { high: 1.5 })],
       }),
       midiTrack('Cordes', TRACK_COLORS[6] ?? TRACK_COLORS[3], 'strings', buildStrings(), {
-        volume: 0.48,
-        pan: 0.1,
-        height: 56,
-        clipName: 'Ligne douce',
+        volume: 0.34,
+        pan: 0.12,
+        height: 50,
+        clipName: 'Halo',
         length,
-        effects: [createTrackEffect('reverb'), createTrackEffect('eq')],
-      }),
-      midiTrack('Lead sax', TRACK_COLORS[7] ?? TRACK_COLORS[0], 'lead', buildLead(), {
-        volume: 0.7,
-        pan: 0.05,
-        height: 64,
-        clipName: 'Hook',
-        length,
-        effects: [createTrackEffect('reverb'), createTrackEffect('echo')],
-      }),
-      midiTrack('Pluck', TRACK_COLORS[4], 'lead-pluck', buildPluck(), {
-        volume: 0.4,
-        pan: -0.2,
-        height: 52,
-        clipName: 'Sparkle',
-        length,
-        effects: [createTrackEffect('pingpong'), createTrackEffect('eq')],
+        effects: [fx('reverb', { mix: 0.48, decay: 3.2 }), fx('eq', { low: -3 })],
       }),
     ],
   }
