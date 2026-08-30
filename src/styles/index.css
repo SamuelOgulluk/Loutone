@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root,
-[data-theme="river-dusk"] {
+html[data-theme="river-dusk"] {
   --bg: #0c1416;
   --bg-0: #0c1416;
   --bg-1: #121c1f;
@@ -36,7 +36,7 @@
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
-[data-theme="studio-ink"] {
+html[data-theme="studio-ink"] {
   --bg: #0a0a0b;
   --bg-0: #0a0a0b;
   --bg-1: #121214;
@@ -68,7 +68,7 @@
   --roll-select-stroke: #f0e8d4;
 }
 
-[data-theme="paper-score"] {
+html[data-theme="paper-score"] {
   --bg: #efe9dc;
   --bg-0: #efe9dc;
   --bg-1: #f7f2e8;
@@ -100,7 +100,7 @@
   --roll-select-stroke: #d0e4f8;
 }
 
-[data-theme="vinyl-night"] {
+html[data-theme="vinyl-night"] {
   --bg: #140c10;
   --bg-0: #140c10;
   --bg-1: #1c1218;
@@ -132,7 +132,7 @@
   --roll-select-stroke: #f4e0b8;
 }
 
-[data-theme="harbor-glow"] {
+html[data-theme="harbor-glow"] {
   --bg: #0e1218;
   --bg-0: #0e1218;
   --bg-1: #141a22;
