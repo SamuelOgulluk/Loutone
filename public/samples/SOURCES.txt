@@ -1,0 +1,9 @@
+Samples CC0 1.0 (domaine public) — FreePats, Roberto / zenvoid.org
+
+epiano-dx  : https://github.com/freepats/fm-piano1
+             DX7 « E. Piano 1 » rendu depuis Hexter
+pad-newage : https://github.com/freepats/new-age
+             pad GM « New Age »
+
+Licence : Creative Commons CC0 1.0
+https://creativecommons.org/publicdomain/zero/1.0/

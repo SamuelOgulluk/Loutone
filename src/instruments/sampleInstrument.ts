@@ -16,6 +16,7 @@ type VoiceOpts = {
   filterQ?: number
   detuneCents?: number
   drive?: number
+  loop?: boolean
 }
 
 type SynthFallback = (

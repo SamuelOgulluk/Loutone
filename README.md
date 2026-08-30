@@ -67,3 +67,13 @@ src-tauri/                 # Shell Tauri 2
 - Instruments : piano, basse, pads, batterie, lead, cordes
 - Effets + Inspector + Mixer avec meters
 - Save/load `.softdaw.json` (FS Tauri ou téléchargement navigateur)
+
+## Samples (CC0)
+
+Le piano électrique et les pads de la démo viennent de [FreePats](https://freepats.zenvoid.org/) (CC0, domaine public) :
+
+- Rhodes / DX7 E.Piano : [fm-piano1](https://github.com/freepats/fm-piano1) (Hexter)
+- Pad warm : [new-age](https://github.com/freepats/new-age)
+
+Fichiers dans `public/samples/` — détails dans `public/samples/SOURCES.txt`.
+Les autres instruments restent sur [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments) (MIT).

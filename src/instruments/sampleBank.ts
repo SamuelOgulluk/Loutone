@@ -1,10 +1,11 @@
 import mapsJson from './sampleMaps.generated.json'
+import extraMaps from './sampleMaps.extra.json'
 
 export type SampleNote = { midi: number; file: string }
 
 type PackMap = Record<string, SampleNote[]>
 
-const SAMPLE_PACKS = mapsJson as PackMap
+const SAMPLE_PACKS = { ...(mapsJson as PackMap), ...(extraMaps as PackMap) }
 
 const CDN = 'https://cdn.jsdelivr.net/gh/nbrosowsky/tonejs-instruments@master/samples'
 const LOCAL = `${import.meta.env.BASE_URL}samples`
@@ -181,7 +182,7 @@ export function getDrumBuffer(name: string) {
 
 export const INSTRUMENT_TO_PACK: Record<string, { pack: string; minify?: number }> = {
   piano: { pack: 'piano', minify: 1 },
-  epiano: { pack: 'piano', minify: 2 },
+  epiano: { pack: 'epiano-dx' },
   organ: { pack: 'organ' },
   bass: { pack: 'bass-electric' },
   'bass-sub': { pack: 'contrabass' },
@@ -189,9 +190,9 @@ export const INSTRUMENT_TO_PACK: Record<string, { pack: string; minify?: number 
   'guitar-clean': { pack: 'guitar-acoustic' },
   'guitar-crunch': { pack: 'guitar-electric' },
   'guitar-lead': { pack: 'guitar-electric' },
-  pads: { pack: 'harmonium' },
-  'pads-warm': { pack: 'harmonium' },
-  'pads-bright': { pack: 'harp' },
+  pads: { pack: 'pad-newage' },
+  'pads-warm': { pack: 'pad-newage' },
+  'pads-bright': { pack: 'pad-newage' },
   drums: { pack: 'drums-kit' },
   lead: { pack: 'saxophone' },
   'lead-saw': { pack: 'trumpet' },
@@ -203,6 +204,8 @@ export const INSTRUMENT_TO_PACK: Record<string, { pack: string; minify?: number 
 export async function preloadEssentialSamples() {
   await Promise.all([
     loadSamplePack('piano', { minify: 2, concurrency: 8 }),
+    loadSamplePack('epiano-dx', { concurrency: 6 }),
+    loadSamplePack('pad-newage', { concurrency: 6 }),
     loadSamplePack('bass-electric', { concurrency: 6 }),
     loadDrumHits(),
   ])
