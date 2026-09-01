@@ -14,7 +14,30 @@ import { audioEngine } from './engine'
 
 const TAIL_SEC = 1.5
 const DEFAULT_BEATS = 16
-const MP3_KBPS = 192
+
+export type ExportFormat = 'wav' | 'mp3' | 'flac'
+
+export type ExportOptions = {
+  format: ExportFormat
+  sampleRate: 44100 | 48000 | 96000
+  bitDepth: 16 | 24 | 32
+  mp3Bitrate: 96 | 128 | 160 | 192 | 256 | 320
+  flacCompression: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+}
+
+export const EXPORT_FORMAT_LABELS: Record<ExportFormat, string> = {
+  wav: 'WAV',
+  mp3: 'MP3',
+  flac: 'FLAC',
+}
+
+export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
+  format: 'wav',
+  sampleRate: 44100,
+  bitDepth: 16,
+  mp3Bitrate: 192,
+  flacCompression: 5,
+}
 
 export function projectExportBeats(project: Project) {
   let end = Math.max(project.lengthBeats || 0, DEFAULT_BEATS)
@@ -28,12 +51,12 @@ export function projectExportBeats(project: Project) {
   return end
 }
 
-export async function bounceProject(project: Project) {
+export async function bounceProject(project: Project, sampleRate?: number) {
   const durationBeats = projectExportBeats(project)
   const durationSec = beatsToSeconds(durationBeats, project.bpm) + TAIL_SEC
-  const sampleRate = audioEngine.ctx?.sampleRate ?? 44100
-  const length = Math.max(1, Math.ceil(sampleRate * durationSec))
-  const offline = new OfflineAudioContext(2, length, sampleRate)
+  const rate = sampleRate ?? audioEngine.ctx?.sampleRate ?? 44100
+  const length = Math.max(1, Math.ceil(rate * durationSec))
+  const offline = new OfflineAudioContext(2, length, rate)
   const ctx = offline as unknown as AudioContext
   const master = offline.createGain()
   master.gain.value = 0.85
@@ -138,10 +161,75 @@ function scheduleTrack(ctx: AudioContext, master: AudioNode, track: Track, proje
   }
 }
 
-export function encodeWav(buffer: AudioBuffer) {
+export function encodeWav(buffer: AudioBuffer, bitDepth: 16 | 24 | 32 = 16) {
   const numChannels = Math.min(2, buffer.numberOfChannels)
   const sampleRate = buffer.sampleRate
   const samples = buffer.length
+  const ch0 = buffer.getChannelData(0)
+  const ch1 = numChannels > 1 ? buffer.getChannelData(1) : ch0
+
+  if (bitDepth === 32) {
+    const bytesPerSample = 4
+    const blockAlign = numChannels * bytesPerSample
+    const dataSize = samples * blockAlign
+    const ab = new ArrayBuffer(44 + dataSize)
+    const view = new DataView(ab)
+    writeStr(view, 0, 'RIFF')
+    view.setUint32(4, 36 + dataSize, true)
+    writeStr(view, 8, 'WAVE')
+    writeStr(view, 12, 'fmt ')
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 3, true)
+    view.setUint16(22, numChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * blockAlign, true)
+    view.setUint16(32, blockAlign, true)
+    view.setUint16(34, 32, true)
+    writeStr(view, 36, 'data')
+    view.setUint32(40, dataSize, true)
+    let offset = 44
+    for (let i = 0; i < samples; i++) {
+      view.setFloat32(offset, ch0[i], true)
+      offset += 4
+      if (numChannels > 1) {
+        view.setFloat32(offset, ch1[i], true)
+        offset += 4
+      }
+    }
+    return new Blob([ab], { type: 'audio/wav' })
+  }
+
+  if (bitDepth === 24) {
+    const bytesPerSample = 3
+    const blockAlign = numChannels * bytesPerSample
+    const dataSize = samples * blockAlign
+    const ab = new ArrayBuffer(44 + dataSize)
+    const view = new DataView(ab)
+    writeStr(view, 0, 'RIFF')
+    view.setUint32(4, 36 + dataSize, true)
+    writeStr(view, 8, 'WAVE')
+    writeStr(view, 12, 'fmt ')
+    view.setUint32(16, 16, true)
+    view.setUint16(20, 1, true)
+    view.setUint16(22, numChannels, true)
+    view.setUint32(24, sampleRate, true)
+    view.setUint32(28, sampleRate * blockAlign, true)
+    view.setUint16(32, blockAlign, true)
+    view.setUint16(34, 24, true)
+    writeStr(view, 36, 'data')
+    view.setUint32(40, dataSize, true)
+    let offset = 44
+    for (let i = 0; i < samples; i++) {
+      writeInt24(view, offset, floatToInt24(ch0[i]))
+      offset += 3
+      if (numChannels > 1) {
+        writeInt24(view, offset, floatToInt24(ch1[i]))
+        offset += 3
+      }
+    }
+    return new Blob([ab], { type: 'audio/wav' })
+  }
+
   const bytesPerSample = 2
   const blockAlign = numChannels * bytesPerSample
   const dataSize = samples * blockAlign
@@ -160,9 +248,6 @@ export function encodeWav(buffer: AudioBuffer) {
   view.setUint16(34, 16, true)
   writeStr(view, 36, 'data')
   view.setUint32(40, dataSize, true)
-
-  const ch0 = buffer.getChannelData(0)
-  const ch1 = numChannels > 1 ? buffer.getChannelData(1) : ch0
   let offset = 44
   for (let i = 0; i < samples; i++) {
     view.setInt16(offset, floatToInt16(ch0[i]), true)
@@ -175,14 +260,14 @@ export function encodeWav(buffer: AudioBuffer) {
   return new Blob([ab], { type: 'audio/wav' })
 }
 
-export async function encodeMp3(buffer: AudioBuffer) {
+export async function encodeMp3(buffer: AudioBuffer, kbps = 192) {
   try {
     const { Mp3Encoder } = await import('@breezystack/lamejs')
     const channels = Math.min(2, buffer.numberOfChannels)
     const sampleRate = buffer.sampleRate
     const left = floatToPcm16(buffer.getChannelData(0))
     const right = channels > 1 ? floatToPcm16(buffer.getChannelData(1)) : left
-    const encoder = new Mp3Encoder(channels, sampleRate, MP3_KBPS)
+    const encoder = new Mp3Encoder(channels, sampleRate, kbps)
     const blockSize = 1152
     const parts = [] as Uint8Array[]
     for (let i = 0; i < left.length; i += blockSize) {
@@ -203,20 +288,74 @@ export async function encodeMp3(buffer: AudioBuffer) {
   }
 }
 
-export async function exportProjectWav(project: Project) {
-  const rendered = await bounceProject(project)
-  const blob = encodeWav(rendered)
-  const name = `${project.name || 'projet'}.wav`
-  await saveAudioBlob(blob, name, [{ name: 'WAV', extensions: ['wav'] }])
+export async function encodeFlac(
+  buffer: AudioBuffer,
+  opts: { bitDepth?: 16 | 24; compression?: number } = {},
+) {
+  const bitDepth = opts.bitDepth ?? 16
+  const compression = opts.compression ?? 5
+  try {
+    const flac = (await import('@audio/encode-flac')).default
+    const channels = Math.min(2, buffer.numberOfChannels)
+    const left = buffer.getChannelData(0)
+    const right = channels > 1 ? buffer.getChannelData(1) : left
+    const encoder = await flac({
+      sampleRate: buffer.sampleRate,
+      channels,
+      bitDepth,
+      compression,
+    })
+    const chunk = encoder.encode(channels === 2 ? [left, right] : [left])
+    const tail = encoder.flush()
+    encoder.free()
+    const parts = [chunk, tail].filter((p) => p && p.length > 0) as Uint8Array[]
+    if (!parts.length) throw new Error('encodeur FLAC vide')
+    const total = parts.reduce((n, p) => n + p.length, 0)
+    const out = new Uint8Array(total)
+    let at = 0
+    for (const p of parts) {
+      out.set(p, at)
+      at += p.length
+    }
+    return new Blob([out], { type: 'audio/flac' })
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err)
+    throw new Error(`Encodage FLAC: ${detail}`)
+  }
+}
+
+export async function exportProject(project: Project, options: ExportOptions = DEFAULT_EXPORT_OPTIONS) {
+  const rendered = await bounceProject(project, options.sampleRate)
+  const base = project.name || 'projet'
+  let blob: Blob
+  let filename: string
+  let filters: { name: string; extensions: string[] }[]
+
+  if (options.format === 'wav') {
+    blob = encodeWav(rendered, options.bitDepth)
+    filename = `${base}.wav`
+    filters = [{ name: 'WAV', extensions: ['wav'] }]
+  } else if (options.format === 'mp3') {
+    blob = await encodeMp3(rendered, options.mp3Bitrate)
+    filename = `${base}.mp3`
+    filters = [{ name: 'MP3', extensions: ['mp3'] }]
+  } else {
+    const flacDepth = options.bitDepth === 32 ? 24 : options.bitDepth
+    blob = await encodeFlac(rendered, { bitDepth: flacDepth, compression: options.flacCompression })
+    filename = `${base}.flac`
+    filters = [{ name: 'FLAC', extensions: ['flac'] }]
+  }
+
+  await saveAudioBlob(blob, filename, filters)
   return blob
 }
 
+export async function exportProjectWav(project: Project) {
+  return exportProject(project, { ...DEFAULT_EXPORT_OPTIONS, format: 'wav' })
+}
+
 export async function exportProjectMp3(project: Project) {
-  const rendered = await bounceProject(project)
-  const blob = await encodeMp3(rendered)
-  const name = `${project.name || 'projet'}.mp3`
-  await saveAudioBlob(blob, name, [{ name: 'MP3', extensions: ['mp3'] }])
-  return blob
+  return exportProject(project, { ...DEFAULT_EXPORT_OPTIONS, format: 'mp3' })
 }
 
 async function saveAudioBlob(
@@ -249,6 +388,18 @@ function downloadBlob(blob: Blob, filename: string) {
 function floatToInt16(sample: number) {
   const s = Math.max(-1, Math.min(1, sample))
   return s < 0 ? (s * 0x8000) | 0 : (s * 0x7fff) | 0
+}
+
+function floatToInt24(sample: number) {
+  const s = Math.max(-1, Math.min(1, sample))
+  return s < 0 ? Math.round(s * 0x800000) : Math.round(s * 0x7fffff)
+}
+
+function writeInt24(view: DataView, offset: number, value: number) {
+  const v = value | 0
+  view.setUint8(offset, v & 0xff)
+  view.setUint8(offset + 1, (v >> 8) & 0xff)
+  view.setUint8(offset + 2, (v >> 16) & 0xff)
 }
 
 function floatToPcm16(data: Float32Array) {

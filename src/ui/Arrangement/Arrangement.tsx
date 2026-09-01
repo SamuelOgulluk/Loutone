@@ -4,7 +4,7 @@ import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { EFFECT_CATALOG, EFFECT_DND_MIME } from '@/audio/effects'
 import { INSTRUMENT_DND_MIME, isInstrumentDragEvent, parseInstrumentDragPayload, getInstrument } from '@/instruments'
-import { AUTOMATION_LANE_H, automationModeLabel } from '@/audio/automation'
+import { AUTOMATION_LANE_H, automationModeLabel, laneTitle, resolveAutomationTarget } from '@/audio/automation'
 import { snapBeat } from '@/ui/hooks/useTransport'
 import { clipLoopLength, uid } from '@/types/project'
 import type { AudioClip, AutomationTargetMode, EffectType, MidiClip, Track } from '@/types/project'
@@ -86,6 +86,8 @@ export function Arrangement() {
   const addEffect = useDawStore((s) => s.addEffect)
   const addBlankTrack = useDawStore((s) => s.addBlankTrack)
   const assignInstrument = useDawStore((s) => s.assignInstrument)
+  const addMidiClip = useDawStore((s) => s.addMidiClip)
+  const setPianoRollOpen = useDawStore((s) => s.setPianoRollOpen)
   const automationTarget = useDawStore((s) => s.automationTarget)
   const automationOpenIds = useDawStore((s) => s.automationOpenIds)
   const setAutomationTarget = useDawStore((s) => s.setAutomationTarget)
@@ -106,6 +108,8 @@ export function Arrangement() {
   const [loopDrag, setLoopDrag] = useState<LoopDrag | null>(null)
   const [marquee, setMarquee] = useState<MarqueeState | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+  const [convertStatus, setConvertStatus] = useState('')
+  const [converting, setConverting] = useState(false)
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const marqueeAdditiveRef = useRef(false)
 
@@ -565,6 +569,7 @@ export function Arrangement() {
   }, [contextMenu])
 
   const runMenu = (action: string) => {
+    const menuSnapshot = contextMenu
     setContextMenu(null)
     if (action === 'cut') cutSelectedClips()
     else if (action === 'copy') copySelectedClips()
@@ -572,6 +577,80 @@ export function Arrangement() {
     else if (action === 'duplicate') duplicateSelectedClips()
     else if (action === 'delete') removeSelectedClips()
     else if (action === 'split') splitSelectedClipsAtPlayhead()
+    else if (action === 'audioToMidi') void convertAudioClipToMidi(menuSnapshot)
+  }
+
+  const convertAudioClipToMidi = async (menu: ContextMenuState | null) => {
+    const clipId = menu?.clipId ?? selection.clipId
+    const trackId = menu?.trackId ?? selection.trackId
+    if (!clipId || !trackId || converting) return
+    const track = project.tracks.find((t) => t.id === trackId)
+    const clip = track?.audioClips.find((c) => c.id === clipId)
+    if (!track || track.type !== 'audio' || !clip) return
+    const buffer = audioEngine.getBuffer(clip.bufferKey)
+    if (!buffer) {
+      setConvertStatus('Audio introuvable')
+      window.setTimeout(() => setConvertStatus(''), 3500)
+      return
+    }
+    setConverting(true)
+    setConvertStatus('Analyse IA (Basic Pitch)…')
+    try {
+      const { transcribeAudioToMidi } = await import('@/audio/audioToMidi')
+      const notes = await transcribeAudioToMidi(
+        buffer,
+        project.bpm,
+        (p) => {
+          setConvertStatus(`Analyse IA ${Math.round(p * 100)}%`)
+        },
+        { offsetBeats: clip.offset, durationBeats: clip.duration },
+      )
+      if (!notes.length) {
+        setConvertStatus('Aucune note détectée — voix plus claire / plus longue')
+        window.setTimeout(() => setConvertStatus(''), 4500)
+        return
+      }
+      addBlankTrack('midi')
+      const midiTrackId = useDawStore.getState().selection.trackId
+      if (!midiTrackId) return
+      assignInstrument(midiTrackId, 'piano', 'Voix → MIDI')
+      const midiTrack = useDawStore.getState().project.tracks.find((t) => t.id === midiTrackId)
+      const midiClipId = uid('clip')
+      const mapped = notes.map((n) => ({
+        id: uid('note'),
+        pitch: n.pitch,
+        start: n.start,
+        duration: n.duration,
+        velocity: n.velocity,
+      }))
+      const last = mapped[mapped.length - 1]
+      const clipDuration = Math.max(clip.duration, last.start + last.duration + 0.1)
+      addMidiClip(midiTrackId, {
+        id: midiClipId,
+        name: `${clip.name} → MIDI`,
+        start: clip.start,
+        duration: clipDuration,
+        loopLength: clipDuration,
+        notes: mapped,
+        color: midiTrack?.color ?? track.color,
+      })
+      setSelection({
+        trackId: midiTrackId,
+        clipId: midiClipId,
+        selectedClipIds: [midiClipId],
+        noteIds: [],
+        effectId: null,
+      })
+      setPianoRollOpen(true)
+      setConvertStatus(`${mapped.length} notes MIDI créées`)
+      window.setTimeout(() => setConvertStatus(''), 4000)
+    } catch (err) {
+      console.error(err)
+      setConvertStatus('Échec conversion MIDI')
+      window.setTimeout(() => setConvertStatus(''), 4000)
+    } finally {
+      setConverting(false)
+    }
   }
 
   const hasSelection = selection.selectedClipIds.length > 0 || !!selection.clipId
@@ -596,6 +675,14 @@ export function Arrangement() {
       ? "La barre de lecture n'est pas sur les clips sélectionnés"
       : undefined
 
+  const contextAudioClip =
+    contextMenu?.clipId && contextMenu.trackId
+      ? project.tracks
+          .find((t) => t.id === contextMenu.trackId)
+          ?.audioClips.find((c) => c.id === contextMenu.clipId)
+      : null
+  const canConvertAudioToMidi = !!contextAudioClip && !converting
+
   const autoModes: AutomationTargetMode[] = ['volume', 'effect', 'instrument']
   const openSet = new Set(automationOpenIds)
   const tracksHeight = project.tracks.reduce(
@@ -611,27 +698,46 @@ export function Arrangement() {
       onPointerCancel={endPointerInteractions}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="px-3 py-2 border-b border-[var(--line)] flex items-center justify-between">
-        <div>
+      <div className="px-3 py-2 border-b border-[var(--line)] flex items-center justify-between gap-2">
+        <div className="min-w-0">
           <h2 className="text-sm font-semibold text-[var(--accent)]">Arrangement</h2>
-          <p className="text-xs text-[var(--muted)]">+ Piste → glisser un instrument · Ctrl+Z/Y · Ctrl+C/V · Ctrl+clic · A : automation</p>
+          <p className="text-xs text-[var(--muted)] tb-hide-lg">
+            + Piste · glisser un instrument · A : courbe d&apos;automatisation sous la piste
+            {convertStatus ? ` · ${convertStatus}` : ''}
+          </p>
         </div>
+        {project.tracks.length > 0 && (
+          <div
+            className="arr-auto-mode-bar shrink-0"
+            title="Paramètre à dessiner dans la ligne d'automatisation (bouton A sur la piste)"
+          >
+            <span className="arr-auto-mode-hint">Auto</span>
+            {autoModes.map((mode) => {
+              const track = project.tracks.find((t) => t.id === selection.trackId)
+              const effectDisabled = mode === 'effect' && (!track || track.effects.length === 0)
+              const short = mode === 'volume' ? 'Vol' : mode === 'effect' ? 'FX' : 'Inst'
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`arr-auto-mode ${automationTarget === mode ? 'is-active' : ''}`}
+                  disabled={effectDisabled}
+                  title={
+                    effectDisabled
+                      ? 'Ajoutez un effet à la piste sélectionnée'
+                      : `Automatiser : ${automationModeLabel(mode)}`
+                  }
+                  onClick={() => setAutomationTarget(mode, selection.trackId)}
+                >
+                  {short}
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
       <div className="flex flex-1 min-h-0 min-w-0">
-        <div className="w-60 shrink-0 border-r border-[var(--line)] overflow-y-auto">
-          <div className="h-7 border-b border-[var(--line)] flex items-center px-1 gap-0.5">
-            {autoModes.map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={`arr-auto-mode ${automationTarget === mode ? 'is-active' : ''}`}
-                title={`Automation : ${automationModeLabel(mode)}`}
-                onClick={() => setAutomationTarget(mode)}
-              >
-                {automationModeLabel(mode)}
-              </button>
-            ))}
-          </div>
+        <div className="arr-track-col shrink-0 border-r border-[var(--line)] overflow-y-auto">
           {project.tracks.map((track) => {
             const autoOpen = openSet.has(track.id)
             const compact = track.height <= TRACK_COMPACT_H + 2
@@ -733,7 +839,7 @@ export function Arrangement() {
                   <div className="flex items-center gap-0.5 shrink-0">
                     <button
                       type="button"
-                      title="Automation"
+                      title="Automatisation — afficher la courbe sous la piste"
                       className={`btn arr-track-btn ${autoOpen ? 'btn-active' : ''}`}
                       onClick={(e) => { e.stopPropagation(); toggleAutomationOpen(track.id) }}
                     >
@@ -768,8 +874,12 @@ export function Arrangement() {
               </div>
               </div>
               {autoOpen && (
-                <div className="arr-auto-head-label px-2 truncate" style={{ height: AUTOMATION_LANE_H }}>
-                  {automationModeLabel(automationTarget)}
+                <div
+                  className="arr-auto-head-label px-2 truncate"
+                  style={{ height: AUTOMATION_LANE_H }}
+                  title="Dessinez la courbe dans la timeline à droite · clic : point · glisser · double-clic : supprimer"
+                >
+                  {laneTitle(track, resolveAutomationTarget(track, automationTarget))}
                 </div>
               )}
             </div>
@@ -1022,6 +1132,15 @@ export function Arrangement() {
               onClick={() => runMenu('split')}
             >
               Diviser à la barre de lecture
+            </button>
+            <div className="arr-context-sep" />
+            <button
+              type="button"
+              disabled={!canConvertAudioToMidi}
+              title="Détecter la mélodie (Basic Pitch IA) et créer une piste MIDI"
+              onClick={() => runMenu('audioToMidi')}
+            >
+              Convertir en MIDI
             </button>
             <div className="arr-context-sep" />
             <button type="button" disabled={!hasSelection} onClick={() => runMenu('delete')}>Supprimer</button>

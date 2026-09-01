@@ -77,22 +77,22 @@ function midiTrack(
 
 // i – iv – bVII – III – bVI – iiø – V – i (Cm), 16 mesures @ 84 BPM
 const BARS = [
+  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9     Eb G Bb D
+  { bass: 41, chord: [53, 56, 60, 63] }, // Fm7     F Ab C Eb
+  { bass: 34, chord: [50, 53, 56, 60] }, // Bb9     D F Ab C
+  { bass: 39, chord: [55, 58, 62, 65] }, // Ebmaj9  G Bb D F
+  { bass: 44, chord: [48, 51, 55, 58] }, // Abmaj9  C Eb G Bb
+  { bass: 38, chord: [50, 53, 56, 60] }, // Dm7b5   D F Ab C
+  { bass: 43, chord: [53, 57, 60, 65] }, // G9sus   F A C F
   { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
-  { bass: 41, chord: [53, 56, 60, 63] }, // Fm7
-  { bass: 34, chord: [50, 56, 60, 65] }, // Bb13
-  { bass: 39, chord: [55, 58, 62, 65] }, // Ebmaj9
-  { bass: 44, chord: [48, 51, 55, 60] }, // Abmaj7
-  { bass: 38, chord: [50, 53, 56, 60] }, // Dm7b5
-  { bass: 43, chord: [48, 53, 55, 60] }, // G7sus
+  { bass: 36, chord: [51, 55, 58, 65] }, // Cm11    Eb G Bb F
+  { bass: 41, chord: [56, 60, 63, 67] }, // Fm9     Ab C Eb G
+  { bass: 34, chord: [50, 53, 56, 60] }, // Bb9
+  { bass: 39, chord: [55, 58, 62, 67] }, // Ebmaj7  G Bb D G
+  { bass: 44, chord: [48, 51, 55, 58] }, // Abmaj9
+  { bass: 43, chord: [47, 50, 53, 57] }, // G7      B D F A
   { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
-  { bass: 36, chord: [51, 55, 58, 67] }, // Cm11
-  { bass: 41, chord: [53, 56, 60, 65] }, // Fm9
-  { bass: 34, chord: [50, 55, 56, 60] }, // Bb9
-  { bass: 39, chord: [53, 55, 58, 62] }, // Ebmaj7
-  { bass: 44, chord: [48, 51, 55, 63] }, // Abmaj9
-  { bass: 43, chord: [47, 53, 55, 62] }, // G7
-  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
-  { bass: 36, chord: [48, 55, 58, 63] }, // Cm (land)
+  { bass: 36, chord: [48, 55, 58, 63] }, // Cm7     C G Bb Eb
 ] as const
 
 function buildDrums() {
@@ -116,22 +116,46 @@ function buildDrums() {
   return notes
 }
 
+function bassRoot(midi: number) {
+  return midi > 40 ? midi - 12 : midi
+}
+
 function buildBass() {
   const notes: MidiNote[] = []
   for (let i = 0; i < 16; i++) {
     const s = i * 4
-    const root = BARS[i].bass
-    const next = BARS[(i + 1) % 16].bass
+    const root = bassRoot(BARS[i].bass)
+    const next = bassRoot(BARS[(i + 1) % 16].bass)
+    const lift = i >= 8
+    const color = root + (root % 12 === 8 || root % 12 === 3 ? 4 : 7)
+    const colorTone = color > 50 ? root - 5 : color
+
     if (i === 7 || i === 15) {
-      notes.push(note(root, s, 3.4, 108))
+      notes.push(note(root, s, 2.2, 104))
+      notes.push(note(colorTone, s + 2.35, 0.32, 76))
+      const approach = next > root ? next - 2 : next + 2
+      notes.push(note(approach, s + 2.85, 0.38, 84))
+      notes.push(note(next, s + 3.4, 0.5, 96))
       continue
     }
-    notes.push(note(root, s, 1.15, 110))
-    notes.push(note(root, s + 1.5, 0.32, 76))
-    const fifth = root + 7
-    notes.push(note(fifth > 50 ? root + 5 : fifth, s + 2.5, 0.7, 94))
-    const approach = next > root ? next - 2 : next + 1
-    notes.push(note(approach, s + 3.55, 0.38, 84))
+
+    notes.push(note(root, s, 0.95, lift ? 110 : 104))
+    notes.push(note(root, s + 1.5, 0.14, 48))
+
+    if (i % 2 === 0) {
+      notes.push(note(root, s + 2.25, 0.2, 70))
+      notes.push(note(root, s + 2.75, 0.55, 98))
+    } else {
+      notes.push(note(colorTone, s + 2.05, 0.28, 78))
+      notes.push(note(root, s + 2.75, 0.48, 96))
+    }
+
+    if (i % 4 === 3) {
+      const approach = next > root ? next - 1 : root - 1
+      notes.push(note(approach, s + 3.5, 0.4, 88))
+    } else if (lift) {
+      notes.push(note(root, s + 3.5, 0.16, 58))
+    }
   }
   return notes
 }
@@ -141,13 +165,14 @@ function buildKeys() {
   for (let i = 0; i < 16; i++) {
     const s = i * 4
     const c = [...BARS[i].chord]
-    notes.push(...chord(c, s, 1.65, 76))
+    const outer = [c[0], c[c.length - 1]]
+    notes.push(...chord(c, s, 1.7, 74))
     if (i === 7 || i === 15) {
-      notes.push(...chord(c, s + 2, 1.8, 62))
+      notes.push(...chord(c, s + 2, 1.85, 60))
       continue
     }
-    notes.push(...chord([c[0], c[2]], s + 2, 0.35, 64))
-    notes.push(...chord(c, s + 2.75, 1.05, 70))
+    notes.push(...chord(outer, s + 2, 0.4, 58))
+    notes.push(...chord(c, s + 2.7, 1.15, 68))
   }
   return notes
 }
@@ -177,16 +202,21 @@ function buildGuitar() {
 function buildMelody() {
   const notes: MidiNote[] = []
   const line = [
-    [67, 16, 1.4, 78], [70, 17.6, 0.45, 72], [72, 18.2, 1.5, 82],
-    [70, 20, 0.7, 74], [68, 20.9, 0.9, 70], [67, 22, 1.6, 76],
-    [65, 24.4, 0.55, 68], [67, 25.1, 0.45, 72], [68, 25.7, 1.7, 78],
-    [67, 28, 1.8, 74], [63, 30.2, 1.5, 70],
-    [72, 36, 0.45, 80], [70, 36.55, 0.4, 74], [67, 37.1, 1.15, 78],
-    [65, 38.5, 1.2, 72], [63, 40, 1.4, 70], [65, 41.6, 0.45, 68],
-    [67, 42.2, 1.5, 76], [70, 44.3, 0.65, 80], [72, 45.1, 0.5, 78],
-    [74, 45.75, 2.0, 82], [72, 48, 1.15, 76], [70, 49.4, 2.1, 72],
-    [68, 52, 0.95, 68], [67, 53.15, 0.7, 70], [65, 54.1, 1.4, 66],
-    [67, 56.4, 2.4, 74], [63, 60, 3.5, 70],
+    [67, 0.75, 1.6, 84], [70, 2.6, 0.35, 76], [72, 3.1, 1.7, 88],
+    [70, 5.1, 0.9, 80], [67, 6.2, 1.5, 78],
+    [65, 8.5, 0.85, 76], [67, 9.5, 0.4, 74], [68, 10.05, 1.55, 82],
+    [67, 12.0, 1.5, 80], [63, 13.75, 2.0, 76],
+    [67, 16.75, 1.5, 86], [70, 18.5, 0.35, 78], [72, 19.0, 1.65, 90],
+    [70, 20.9, 0.7, 80], [68, 21.75, 0.55, 76], [67, 22.5, 1.25, 78],
+    [65, 24.5, 0.7, 76], [63, 25.4, 0.45, 74], [62, 26.0, 1.5, 78],
+    [60, 28.0, 3.5, 84],
+    [72, 32.75, 1.4, 88], [70, 34.4, 0.4, 80], [67, 34.95, 1.55, 82],
+    [65, 36.75, 1.35, 78], [63, 38.35, 1.4, 76],
+    [65, 40.5, 0.85, 78], [67, 41.5, 0.4, 76], [68, 42.05, 1.5, 84],
+    [67, 44.0, 1.35, 80], [63, 45.6, 2.05, 76],
+    [68, 48.75, 1.25, 82], [67, 50.2, 0.45, 76], [65, 50.8, 1.7, 80],
+    [67, 53.0, 0.7, 78], [65, 53.85, 0.7, 74], [63, 54.7, 0.9, 76],
+    [60, 56.0, 7.5, 86],
   ] as const
   for (const [pitch, start, dur, vel] of line) notes.push(note(pitch, start, dur, vel))
   return notes
@@ -222,11 +252,11 @@ export function createDemoProject(): Project {
         effects: [fx('compressor', { threshold: -16, ratio: 2.4 }), fx('eq', { high: 2 })],
       }),
       midiTrack('Basse', TRACK_COLORS[1], 'bass', buildBass(), {
-        volume: 0.9,
+        volume: 0.82,
         height: 62,
-        clipName: 'Ligne',
+        clipName: 'Poche',
         length,
-        effects: [fx('compressor', { threshold: -14, ratio: 3 }), fx('saturator', { drive: 0.22, mix: 0.28 })],
+        effects: [fx('compressor', { threshold: -18, ratio: 2.2 }), fx('eq', { low: 1.5, high: -1.5 })],
       }),
       midiTrack('Rhodes', TRACK_COLORS[0], 'epiano', buildKeys(), {
         volume: 0.72,

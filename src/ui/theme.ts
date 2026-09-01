@@ -1,9 +1,9 @@
 export const THEME_IDS = [
+  'harbor-glow',
   'river-dusk',
   'studio-ink',
   'paper-score',
   'vinyl-night',
-  'harbor-glow',
 ] as const
 
 export type ThemeId = (typeof THEME_IDS)[number]
@@ -17,7 +17,7 @@ export const THEME_LABELS = {
 } as const
 
 const STORAGE_KEY = 'loutone-theme'
-const DEFAULT_THEME = 'river-dusk'
+const DEFAULT_THEME = 'harbor-glow'
 
 export function isThemeId(value: string): value is ThemeId {
   return (THEME_IDS as readonly string[]).includes(value)

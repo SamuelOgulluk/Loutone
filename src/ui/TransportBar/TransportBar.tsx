@@ -4,20 +4,25 @@ import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { togglePlay, stopTransport } from '@/ui/hooks/useTransport'
 import { THEME_IDS, THEME_LABELS, applyTheme, getStoredTheme } from '@/ui/theme'
-import { TRACK_COLORS, uid } from '@/types/project'
-import type { WhistleRecorder } from '@/audio/whistleToMidi'
+import { LayoutDock } from '@/ui/layout/Workspace'
+import { ExportDialog } from '@/ui/ExportDialog/ExportDialog'
+import { PositionBubbles } from '@/ui/TransportBar/PositionBubbles'
+import { uid } from '@/types/project'
+import type { VoiceRecorder } from '@/audio/voiceRecorder'
+import { MicCaptureError } from '@/audio/voiceRecorder'
 
 const MENU_CLOSE_MS = 180
 
-async function loadWhistleRecorder() {
-  const { WhistleRecorder } = await import('@/audio/whistleToMidi')
-  return new WhistleRecorder()
+async function loadVoiceRecorder() {
+  const { VoiceRecorder } = await import('@/audio/voiceRecorder')
+  return new VoiceRecorder()
 }
 
 export function TransportBar() {
   const project = useDawStore((s) => s.project)
   const playing = useDawStore((s) => s.playing)
   const positionBeat = useDawStore((s) => s.positionBeat)
+  const setPositionBeat = useDawStore((s) => s.setPositionBeat)
   const snap = useDawStore((s) => s.snap)
   const zoom = useDawStore((s) => s.zoom)
   const pianoRollOpen = useDawStore((s) => s.pianoRollOpen)
@@ -37,104 +42,112 @@ export function TransportBar() {
   const loadDemo = useDawStore((s) => s.loadDemo)
   const setProject = useDawStore((s) => s.setProject)
   const addBlankTrack = useDawStore((s) => s.addBlankTrack)
-  const assignInstrument = useDawStore((s) => s.assignInstrument)
-  const addMidiClip = useDawStore((s) => s.addMidiClip)
+  const addAudioClip = useDawStore((s) => s.addAudioClip)
   const setSelection = useDawStore((s) => s.setSelection)
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const [theme, setTheme] = useState(getStoredTheme)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [exportStatus, setExportStatus] = useState('')
-  const [exporting, setExporting] = useState(false)
-  const [whistleRecording, setWhistleRecording] = useState(false)
-  const [whistleStatus, setWhistleStatus] = useState('')
-  const whistleRef = useRef(null as WhistleRecorder | null)
-  const whistleReady = useRef(null as Promise<WhistleRecorder> | null)
+  const [voiceRecording, setVoiceRecording] = useState(false)
+  const [voiceStatus, setVoiceStatus] = useState('')
+  const voiceRef = useRef(null as VoiceRecorder | null)
+  const voiceReady = useRef(null as Promise<VoiceRecorder> | null)
+  const recordStartBeatRef = useRef(0)
+  const levelTimerRef = useRef(0)
   const closeTimer = useRef(0)
   const triggerRef = useRef(null as HTMLDivElement | null)
 
-  const ensureWhistle = () => {
-    if (!whistleReady.current) {
-      whistleReady.current = loadWhistleRecorder().then((rec) => {
-        whistleRef.current = rec
+  const ensureVoice = () => {
+    if (!voiceReady.current) {
+      voiceReady.current = loadVoiceRecorder().then((rec) => {
+        voiceRef.current = rec
         return rec
       })
     }
-    return whistleReady.current
+    return voiceReady.current
   }
 
-  const runExport = async (kind: 'wav' | 'mp3') => {
-    if (exporting) return
-    setExporting(true)
-    setExportStatus(kind === 'wav' ? 'Export WAV…' : 'Export MP3…')
-    try {
-      if (playing) {
-        audioEngine.pause()
-        useDawStore.getState().setPlaying(false)
-      }
-      const { exportProjectMp3, exportProjectWav } = await import('@/audio/export')
-      if (kind === 'wav') await exportProjectWav(project)
-      else await exportProjectMp3(project)
-      setExportStatus(kind === 'wav' ? 'WAV exporté' : 'MP3 exporté')
-    } catch (err) {
-      console.error(err)
-      const detail = err instanceof Error ? err.message : String(err)
-      const short = detail.length > 80 ? `${detail.slice(0, 77)}…` : detail
-      setExportStatus(`Échec ${kind.toUpperCase()}: ${short || 'erreur inconnue'}`)
-    } finally {
-      setExporting(false)
-      window.setTimeout(() => setExportStatus(''), 5000)
+  const openExportDialog = () => {
+    if (playing) {
+      audioEngine.pause()
+      useDawStore.getState().setPlaying(false)
+    }
+    setExportDialogOpen(true)
+    setMenuOpen(false)
+  }
+
+  const micStatusFromError = (err: unknown) => {
+    if (err instanceof MicCaptureError) return err.message
+    if (err instanceof DOMException) return micErrorFromDom(err)
+    const msg = err instanceof Error ? err.message : String(err)
+    return msg.length > 60 ? 'Échec enregistrement (voir console)' : msg || 'Échec enregistrement'
+  }
+
+  const micErrorFromDom = (err: DOMException) => {
+    if (err.name === 'NotAllowedError') return 'Micro refusé — autorise l’accès dans le navigateur'
+    if (err.name === 'NotFoundError') return 'Aucun micro détecté'
+    return err.message || 'Micro indisponible'
+  }
+
+  const stopLevelMeter = () => {
+    if (levelTimerRef.current) {
+      window.clearInterval(levelTimerRef.current)
+      levelTimerRef.current = 0
     }
   }
 
-  const toggleWhistleRecord = async () => {
-    const rec = await ensureWhistle()
-    if (rec.isBusy) return
+  const startLevelMeter = () => {
+    stopLevelMeter()
+    levelTimerRef.current = window.setInterval(() => {
+      const rec = voiceRef.current
+      if (!rec?.isRecording) return
+      const lvl = rec.getInputLevel()
+      const bars = Math.round(lvl * 12)
+      const meter = bars > 0 ? '▮'.repeat(bars) : '…'
+      setVoiceStatus(`Rec ${meter}`)
+    }, 120)
+  }
+
+  const toggleVoiceRecord = async () => {
+    const rec = await ensureVoice()
     if (rec.isRecording) {
-      setWhistleStatus('Analyse rythme…')
+      stopLevelMeter()
       try {
-        const { notes, durationBeats } = await rec.stop(project.bpm, (p) => {
-          setWhistleStatus(`Analyse ${Math.round(p * 100)}%`)
-        })
-        setWhistleRecording(false)
-        if (!notes.length) {
-          setWhistleStatus('Aucune note — siffle plus fort / plus long')
-          window.setTimeout(() => setWhistleStatus(''), 4000)
+        const buffer = await rec.stop()
+        setVoiceRecording(false)
+        if (!buffer) {
+          setVoiceStatus('Aucun audio capturé')
+          window.setTimeout(() => setVoiceStatus(''), 4000)
           return
         }
         let trackId = selection.trackId
         let track = project.tracks.find((t) => t.id === trackId)
-        if (!track || track.type !== 'midi') {
-          addBlankTrack('midi')
+        if (!track || track.type !== 'audio') {
+          addBlankTrack('audio')
           trackId = useDawStore.getState().selection.trackId
-          if (trackId) assignInstrument(trackId, 'piano', 'Sifflement')
           track = useDawStore.getState().project.tracks.find((t) => t.id === trackId)
         }
         if (!trackId || !track) {
-          setWhistleStatus('Échec : pas de piste')
-          window.setTimeout(() => setWhistleStatus(''), 3500)
+          setVoiceStatus('Échec : pas de piste audio')
+          window.setTimeout(() => setVoiceStatus(''), 3500)
           return
         }
-        if (!track.instrumentId) assignInstrument(trackId, 'piano', track.name === 'Piste' ? 'Sifflement' : track.name)
+        const key = uid('buf')
+        audioEngine.setBuffer(key, buffer)
+        const start = recordStartBeatRef.current
+        const duration = Math.max(0.25, (buffer.duration * project.bpm) / 60)
         const clipId = uid('clip')
-        const color = track.color || TRACK_COLORS[0]
-        const start = positionBeat
-        // Timing brut du sifflement — jamais de snap/grille
-        const mapped = notes.map((n) => ({
-          id: uid('note'),
-          pitch: n.pitch,
-          start: n.start,
-          duration: n.duration,
-          velocity: n.velocity,
-        }))
-        addMidiClip(trackId, {
+        addAudioClip(trackId, {
           id: clipId,
-          name: 'Sifflement',
+          name: 'Voix',
           start,
-          duration: Math.max(2, durationBeats),
-          loopLength: Math.max(2, durationBeats),
-          notes: mapped,
-          color,
+          duration,
+          loopLength: duration,
+          offset: 0,
+          bufferKey: key,
+          color: track.color,
         })
         setSelection({
           trackId,
@@ -143,15 +156,13 @@ export function TransportBar() {
           noteIds: [],
           effectId: null,
         })
-        setPianoRollOpen(true)
-        setWhistleStatus(`${notes.length} note${notes.length > 1 ? 's' : ''} → MIDI (timing réel)`)
-        window.setTimeout(() => setWhistleStatus(''), 4000)
+        setVoiceStatus('Voix enregistrée — clic droit sur le clip → MIDI')
+        window.setTimeout(() => setVoiceStatus(''), 5000)
       } catch (err) {
         console.error(err)
-        setWhistleRecording(false)
-        const msg = err instanceof Error ? err.message : 'Échec conversion'
-        setWhistleStatus(msg.length > 42 ? 'Échec conversion (voir console)' : msg)
-        window.setTimeout(() => setWhistleStatus(''), 5000)
+        setVoiceRecording(false)
+        setVoiceStatus(micStatusFromError(err))
+        window.setTimeout(() => setVoiceStatus(''), 6000)
       }
       return
     }
@@ -161,17 +172,27 @@ export function TransportBar() {
         audioEngine.pause()
         useDawStore.getState().setPlaying(false)
       }
+      await audioEngine.resume()
+      recordStartBeatRef.current = positionBeat
       await rec.start()
-      setWhistleRecording(true)
-      setWhistleStatus('Siffle… reclique pour convertir')
+      setVoiceRecording(true)
+      setVoiceStatus('Rec …')
+      startLevelMeter()
     } catch (err) {
       console.error(err)
-      setWhistleStatus('Micro refusé')
-      window.setTimeout(() => setWhistleStatus(''), 4000)
+      stopLevelMeter()
+      setVoiceRecording(false)
+      setVoiceStatus(micStatusFromError(err))
+      window.setTimeout(() => setVoiceStatus(''), 6000)
     }
   }
 
-  useEffect(() => () => { void whistleRef.current?.cancel() }, [])
+  useEffect(() => {
+    return () => {
+      stopLevelMeter()
+      void voiceRef.current?.cancel()
+    }
+  }, [])
 
   const clearCloseTimer = () => {
     if (closeTimer.current) {
@@ -215,25 +236,21 @@ export function TransportBar() {
 
   useEffect(() => () => clearCloseTimer(), [])
 
-  const bars = Math.floor(positionBeat / project.timeSignature.numerator) + 1
-  const beatInBar = Math.floor(positionBeat % project.timeSignature.numerator) + 1
-  const tick = Math.floor((positionBeat % 1) * 100)
-
   return (
-    <header className="panel flex items-center gap-3 px-3 py-2 overflow-visible">
-      <div className="flex items-center gap-2 pr-3 border-r border-[var(--line)]">
+    <header className="panel tb">
+      <div className="tb-brand">
         <span className="inline-flex items-center gap-1.5 text-[var(--accent)]" title="Loutone">
           <img src={`${import.meta.env.BASE_URL}loutone.svg`} alt="" width={24} height={24} className="shrink-0 rounded-[6px]" />
-          <span className="text-xl font-semibold tracking-tight">Loutone</span>
+          <span className="tb-brand-name text-xl font-semibold tracking-tight">Loutone</span>
         </span>
         <input
-          className="bg-transparent border-none text-sm text-[var(--muted)] w-36"
+          className="tb-project-name bg-transparent border-none text-sm text-[var(--muted)] w-36"
           value={project.name}
           onChange={(e) => setName(e.target.value)}
         />
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="tb-cluster tb-transport">
         <button className="btn" title="Stop" onClick={() => void stopTransport()}>■</button>
         <button className={`btn ${playing ? 'btn-active' : 'btn-accent'}`} title="Play (Space)" onClick={() => void togglePlay()}>
           {playing ? '❚❚' : '▶'}
@@ -247,25 +264,27 @@ export function TransportBar() {
         </button>
         <button
           type="button"
-          className={`btn ${whistleRecording ? 'btn-active' : ''}`}
-          title={whistleRecording ? 'Arrêter et convertir en MIDI' : 'Enregistrer un sifflement → MIDI'}
-          onClick={() => void toggleWhistleRecord()}
+          className={`btn ${voiceRecording ? 'btn-active' : ''}`}
+          title={voiceRecording ? 'Arrêter l\'enregistrement vocal' : 'Enregistrer la voix'}
+          onClick={() => void toggleVoiceRecord()}
         >
-          {whistleRecording ? '■ MIDI' : '♪ Rec'}
+          {voiceRecording ? '■ Rec' : '🎤 Rec'}
         </button>
       </div>
 
-      {(whistleStatus || exportStatus) && (
-        <span className="text-[11px] text-[var(--muted)] mono max-w-[14rem] truncate" title={whistleStatus || exportStatus}>
-          {whistleStatus || exportStatus}
+      {(voiceStatus || exportStatus) && (
+        <span className="text-[11px] text-[var(--muted)] mono max-w-[14rem] truncate" title={voiceStatus || exportStatus}>
+          {voiceStatus || exportStatus}
         </span>
       )}
 
-      <div className="mono text-sm px-3 py-1 rounded bg-[var(--bg-0)] border border-[var(--line)] min-w-[7.5rem] text-center">
-        {String(bars).padStart(3, '0')}.{beatInBar}.{String(tick).padStart(2, '0')}
-      </div>
+      <PositionBubbles
+        positionBeat={positionBeat}
+        beatsPerBar={project.timeSignature.numerator}
+        onSeek={setPositionBeat}
+      />
 
-      <label className="flex items-center gap-1 text-sm text-[var(--muted)]">
+      <label className="tb-hide-md flex items-center gap-1 text-sm text-[var(--muted)]">
         BPM
         <input
           type="number"
@@ -279,14 +298,14 @@ export function TransportBar() {
 
       <button
         type="button"
-        className={`btn ${metronome ? 'btn-active' : ''}`}
+        className={`btn tb-hide-md ${metronome ? 'btn-active' : ''}`}
         title={metronome ? 'Métronome activé' : 'Métronome'}
         onClick={() => setMetronome(!metronome)}
       >
         ♩
       </button>
 
-      <label className="flex items-center gap-1 text-sm text-[var(--muted)]">
+      <label className="tb-hide-lg flex items-center gap-1 text-sm text-[var(--muted)]">
         Mesure
         <select
           value={`${project.timeSignature.numerator}/${project.timeSignature.denominator}`}
@@ -305,18 +324,18 @@ export function TransportBar() {
 
       <button
         type="button"
-        className={`btn btn-accent shrink-0 ${mainView === 'modes' ? 'btn-active' : ''}`}
+        className={`btn btn-accent shrink-0 tb-modes ${mainView === 'modes' ? 'btn-active' : ''}`}
         title="Onglet Modes & structure"
         onClick={() => setMainView(mainView === 'modes' ? 'arrange' : 'modes')}
       >
-        Modes & structure
+        Modes
       </button>
 
-      <button className={`btn ${snap ? 'btn-active' : ''}`} onClick={() => setSnap(!snap)} title="Snap (S)">
+      <button className={`btn tb-hide-md ${snap ? 'btn-active' : ''}`} onClick={() => setSnap(!snap)} title="Snap (S)">
         Snap
       </button>
 
-      <label className="flex items-center gap-1 text-sm text-[var(--muted)]">
+      <label className="tb-hide-lg flex items-center gap-1 text-sm text-[var(--muted)]">
         Zoom
         <input
           type="range"
@@ -327,7 +346,9 @@ export function TransportBar() {
         />
       </label>
 
-      <div className="flex-1" />
+      <div className="flex-1 min-w-2" />
+
+      <LayoutDock />
 
       <div
         ref={triggerRef}
@@ -397,20 +418,10 @@ export function TransportBar() {
             <button
               type="button"
               role="menuitem"
-              disabled={exporting}
-              title="Rendu offline PCM 16-bit stéréo"
-              onClick={() => void runExport('wav')}
+              title="Exporter l'audio (WAV, MP3, FLAC…)"
+              onClick={openExportDialog}
             >
-              Exporter en WAV
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              disabled={exporting}
-              title="Rendu offline puis encodage MP3 (lamejs ~192 kb/s)"
-              onClick={() => void runExport('mp3')}
-            >
-              Exporter en MP3
+              Exporter…
             </button>
             {exportStatus ? (
               <span className="tb-menu-hint" role="status">
@@ -430,6 +441,43 @@ export function TransportBar() {
             </button>
             <div className="tb-menu-sep" />
             <div className="tb-menu-theme-slot">
+              <span className="tb-menu-hint">Transport</span>
+              <label className="tb-menu-field">
+                BPM
+                <input
+                  type="number"
+                  className="mono w-16"
+                  value={project.bpm}
+                  min={20}
+                  max={300}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                />
+              </label>
+              <label className="tb-menu-field">
+                Mesure
+                <select
+                  value={`${project.timeSignature.numerator}/${project.timeSignature.denominator}`}
+                  onChange={(e) => {
+                    const [n, d] = e.target.value.split('/').map(Number)
+                    setTimeSignature(n, d)
+                  }}
+                >
+                  <option value="4/4">4/4</option>
+                  <option value="3/4">3/4</option>
+                  <option value="6/8">6/8</option>
+                  <option value="5/4">5/4</option>
+                  <option value="7/8">7/8</option>
+                </select>
+              </label>
+              <button type="button" role="menuitem" className={snap ? 'tb-menu-active' : ''} onClick={() => setSnap(!snap)}>
+                Snap
+              </button>
+              <button type="button" role="menuitem" className={metronome ? 'tb-menu-active' : ''} onClick={() => setMetronome(!metronome)}>
+                Métronome
+              </button>
+            </div>
+            <div className="tb-menu-sep" />
+            <div className="tb-menu-theme-slot">
               <span className="tb-menu-hint">Thème</span>
               {THEME_IDS.map((id) => (
                 <button
@@ -447,6 +495,13 @@ export function TransportBar() {
           </div>,
           document.body,
         )}
+
+      <ExportDialog
+        open={exportDialogOpen}
+        project={project}
+        onClose={() => setExportDialogOpen(false)}
+        onStatus={setExportStatus}
+      />
     </header>
   )
 }

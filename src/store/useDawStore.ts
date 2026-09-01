@@ -129,7 +129,7 @@ type DawState = {
   updateEffect: (trackId: string, effectId: string, params: Partial<TrackEffect['params']>) => void
   removeEffect: (trackId: string, effectId: string) => void
   moveEffect: (trackId: string, effectId: string, dir: -1 | 1) => void
-  setAutomationTarget: (mode: AutomationTargetMode) => void
+  setAutomationTarget: (mode: AutomationTargetMode, trackId?: string | null) => void
   toggleAutomationOpen: (trackId: string) => void
   setAutomationOpen: (trackId: string, open: boolean) => void
   addAutomationPoint: (trackId: string, beat: number, value: number) => void
@@ -293,7 +293,7 @@ function clearHistoryStacks() {
 }
 
 export const useDawStore = create<DawState>((set, get) => ({
-  project: createDemoProject(),
+  project: createEmptyProject(),
   selection: emptySelection(),
   clipClipboard: { items: [] },
   noteClipboard: { notes: [] },
@@ -309,7 +309,7 @@ export const useDawStore = create<DawState>((set, get) => ({
   quantizeStrength: 1,
   swingAmount: 0,
   zoom: 48,
-  pianoRollOpen: true,
+  pianoRollOpen: false,
   mainView: 'arrange',
   metronome: false,
   meters: {},
@@ -1033,7 +1033,43 @@ export const useDawStore = create<DawState>((set, get) => ({
     effects.splice(next, 0, item)
     get().updateTrack(trackId, { effects })
   },
-  setAutomationTarget: (mode) => set({ automationTarget: mode }),
+  setAutomationTarget: (mode, trackId) => {
+    const tid =
+      trackId ??
+      get().selection.trackId ??
+      get().automationOpenIds[0] ??
+      get().project.tracks[0]?.id ??
+      null
+    if (!tid) {
+      set({ automationTarget: mode })
+      return
+    }
+    const track = get().project.tracks.find((t) => t.id === tid)
+    if (!track) {
+      set({ automationTarget: mode })
+      return
+    }
+    const target = resolveAutomationTarget(track, mode)
+    if (!target) {
+      set({ automationTarget: mode })
+      return
+    }
+    const openIds = get().automationOpenIds.includes(tid)
+      ? get().automationOpenIds
+      : [...get().automationOpenIds, tid]
+    let project = get().project
+    if (!findLane(track, target)) {
+      project = {
+        ...project,
+        tracks: project.tracks.map((t) => (t.id === tid ? withEnsuredLane(t, target) : t)),
+      }
+    }
+    set({
+      automationTarget: mode,
+      automationOpenIds: openIds,
+      project: withSync(get, project),
+    })
+  },
   toggleAutomationOpen: (trackId) => {
     const open = get().automationOpenIds
     const next = open.includes(trackId) ? open.filter((id) => id !== trackId) : [...open, trackId]

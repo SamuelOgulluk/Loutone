@@ -9,10 +9,13 @@ export type WhistleMidiNote = {
 
 const WHISTLE_MIN_HZ = 450
 const WHISTLE_MAX_HZ = 2800
+const VOICE_MIN_HZ = 80
+const VOICE_MAX_HZ = 2200
 const WIN = 2048
 const HOP = 160
 const YIN_THRESHOLD = 0.15
-const CLARITY_MIN = 0.82
+const WHISTLE_CLARITY_MIN = 0.82
+const VOICE_CLARITY_MIN = 0.55
 const RMS_MIN = 0.006
 const MIN_NOTE_SEC = 0.055
 const MIN_SPLIT_SEC = 0.08
@@ -20,6 +23,13 @@ const PITCH_JUMP = 1.25
 const BRIDGE_GAP_SEC = 0.055
 const MERGE_GAP_SEC = 0.07
 const MIN_ONSET_GAP = 0.07
+
+export type PitchProfile = 'whistle' | 'voice'
+
+const PITCH_PROFILES = {
+  whistle: { minHz: WHISTLE_MIN_HZ, maxHz: WHISTLE_MAX_HZ, clarityMin: WHISTLE_CLARITY_MIN, minMidi: 48, maxMidi: 100 },
+  voice: { minHz: VOICE_MIN_HZ, maxHz: VOICE_MAX_HZ, clarityMin: VOICE_CLARITY_MIN, minMidi: 36, maxMidi: 84 },
+}
 
 type Frame = {
   t: number
@@ -32,7 +42,7 @@ function yieldUi() {
   return new Promise((r) => window.setTimeout(r, 0))
 }
 
-function mergeChunks(chunks: Float32Array[], sampleRate: number) {
+export function mergeAudioChunks(chunks: Float32Array[], sampleRate: number) {
   let total = 0
   for (const c of chunks) total += c.length
   const data = new Float32Array(Math.max(1, total))
@@ -51,15 +61,16 @@ function freqToMidi(freq: number) {
   return 12 * Math.log2(freq / 440) + 69
 }
 
-function yinPitch(buf: Float32Array, sampleRate: number) {
+function yinPitch(buf: Float32Array, sampleRate: number, profile: PitchProfile) {
+  const cfg = PITCH_PROFILES[profile]
   const n = buf.length
   let rms = 0
   for (let i = 0; i < n; i++) rms += buf[i] * buf[i]
   rms = Math.sqrt(rms / n)
   if (rms < RMS_MIN) return { freq: -1, clarity: 0, rms }
 
-  const minTau = Math.max(2, Math.floor(sampleRate / WHISTLE_MAX_HZ))
-  const maxTau = Math.min(Math.floor(n / 2) - 1, Math.floor(sampleRate / WHISTLE_MIN_HZ))
+  const minTau = Math.max(2, Math.floor(sampleRate / cfg.maxHz))
+  const maxTau = Math.min(Math.floor(n / 2) - 1, Math.floor(sampleRate / cfg.minHz))
   if (maxTau <= minTau) return { freq: -1, clarity: 0, rms }
 
   const yin = new Float32Array(maxTau + 1)
@@ -103,7 +114,7 @@ function yinPitch(buf: Float32Array, sampleRate: number) {
   const better = tauEstimate + (x2 - x0) / (2 * (2 * x1 - x2 - x0) || 1)
   const freq = sampleRate / better
   const clarity = 1 - yin[tauEstimate]
-  if (clarity < CLARITY_MIN || freq < WHISTLE_MIN_HZ || freq > WHISTLE_MAX_HZ) {
+  if (clarity < cfg.clarityMin || freq < cfg.minHz || freq > cfg.maxHz) {
     return { freq: -1, clarity, rms }
   }
   return { freq, clarity, rms }
@@ -153,6 +164,7 @@ function trimSilence(data: Float32Array, sampleRate: number) {
 async function extractFrames(
   data: Float32Array,
   sampleRate: number,
+  profile: PitchProfile,
   onProgress?: (p: number) => void,
 ) {
   const frames: Frame[] = []
@@ -169,7 +181,7 @@ async function extractFrames(
       const w = 0.5 - 0.5 * Math.cos((2 * Math.PI * k) / (WIN - 1))
       tmp[k] *= w
     }
-    const { freq, rms } = yinPitch(tmp, sampleRate)
+    const { freq, rms } = yinPitch(tmp, sampleRate, profile)
     const energy = bandEnergy(tmp)
     const flux = Math.max(0, energy - prevEnergy * 0.85)
     prevEnergy = energy
@@ -239,7 +251,8 @@ function mergeSamePitch(notes: WhistleMidiNote[], bpm: number) {
   return out
 }
 
-function framesToNotes(frames: Frame[], bpm: number) {
+function framesToNotes(frames: Frame[], bpm: number, profile: PitchProfile) {
+  const cfg = PITCH_PROFILES[profile]
   if (!frames.length) return [] as WhistleMidiNote[]
 
   const dt = frames.length > 1 ? frames[1].t - frames[0].t : HOP / 16000
@@ -305,7 +318,7 @@ function framesToNotes(frames: Frame[], bpm: number) {
     const dur = endT - startT
     if (dur >= MIN_NOTE_SEC && pitches.length + bridged >= 2) {
       notes.push({
-        pitch: Math.max(48, Math.min(100, Math.round(median(pitches)))),
+        pitch: Math.max(cfg.minMidi, Math.min(cfg.maxMidi, Math.round(median(pitches)))),
         start: secondsToBeats(startT, bpm),
         duration: Math.max(0.05, secondsToBeats(dur, bpm)),
         velocity: Math.max(55, Math.min(120, Math.round(60 + median(rmses) * 450))),
@@ -320,20 +333,28 @@ function framesToNotes(frames: Frame[], bpm: number) {
   return merged.map((n) => ({ ...n, start: Math.max(0, n.start - t0) }))
 }
 
+export async function analyzeAudioToMidi(
+  buffer: AudioBuffer,
+  bpm: number,
+  onProgress?: (p: number) => void,
+  profile: PitchProfile = 'voice',
+) {
+  const raw = trimSilence(buffer.getChannelData(0), buffer.sampleRate)
+  const targetSr = 16000
+  const data = downsample(raw, buffer.sampleRate, targetSr)
+  onProgress?.(0.02)
+  const frames = await extractFrames(data, targetSr, profile, (p) => onProgress?.(0.02 + p * 0.9))
+  const notes = framesToNotes(frames, bpm, profile)
+  onProgress?.(1)
+  return notes
+}
+
 async function analyzeWhistle(
   buffer: AudioBuffer,
   bpm: number,
   onProgress?: (p: number) => void,
 ) {
-  const raw = trimSilence(buffer.getChannelData(0), buffer.sampleRate)
-  // downsample → analyse bien plus rapide, timing inchangé
-  const targetSr = 16000
-  const data = downsample(raw, buffer.sampleRate, targetSr)
-  onProgress?.(0.02)
-  const frames = await extractFrames(data, targetSr, (p) => onProgress?.(0.02 + p * 0.9))
-  const notes = framesToNotes(frames, bpm)
-  onProgress?.(1)
-  return notes
+  return analyzeAudioToMidi(buffer, bpm, onProgress, 'whistle')
 }
 
 function downsample(input: Float32Array, fromRate: number, toRate: number) {
@@ -422,7 +443,7 @@ export class WhistleRecorder {
 
     try {
       if (!chunks.length) return { notes: [] as WhistleMidiNote[], durationBeats: 4 }
-      const buffer = mergeChunks(chunks, rate)
+      const buffer = mergeAudioChunks(chunks, rate)
       if (buffer.duration < 0.12) return { notes: [] as WhistleMidiNote[], durationBeats: 4 }
       const notes = await analyzeWhistle(buffer, bpm, onProgress)
       const last = notes[notes.length - 1]

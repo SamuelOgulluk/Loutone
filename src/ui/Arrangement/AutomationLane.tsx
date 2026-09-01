@@ -109,7 +109,7 @@ export function AutomationLaneView({ track, width, zoom, beats }: Props) {
       style={{ height: h, width }}
       data-auto-lane
       onPointerDown={onLaneDown}
-      title={!target ? 'Ajoutez un effet pour automatiser' : `${title} — clic : point · glisser · double-clic : supprimer`}
+      title={!target ? 'Ajoutez un effet (onglet Effets) puis choisissez Auto → FX' : `${title} — clic : point · glisser · double-clic : supprimer`}
     >
       <div className="arr-auto-label pointer-events-none absolute left-1 top-0.5 z-[1]">{title}</div>
       <svg className="absolute inset-0 pointer-events-none" width={width} height={h}>
@@ -153,8 +153,10 @@ export function AutomationLaneView({ track, width, zoom, beats }: Props) {
         />
       ))}
       {!target && (
-        <div className="absolute inset-0 flex items-center justify-center text-[10px] text-[var(--muted)] pointer-events-none">
-          Aucun effet sur cette piste
+        <div className="absolute inset-0 flex items-center justify-center text-[10px] text-[var(--muted)] pointer-events-none px-2 text-center">
+          {automationTarget === 'effect'
+            ? 'Ajoutez un effet à la piste'
+            : 'Ouvrez Auto → Vol ou Inst'}
         </div>
       )}
     </div>

@@ -35,6 +35,9 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/@breezystack/lamejs')) return 'lame'
+          if (id.includes('node_modules/@tensorflow') || id.includes('node_modules/@spotify/basic-pitch')) {
+            return 'basic-pitch'
+          }
           if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'react'
           if (id.includes('node_modules/zustand')) return 'zustand'
           return undefined

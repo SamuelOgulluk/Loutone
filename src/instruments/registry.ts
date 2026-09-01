@@ -212,6 +212,7 @@ export function makeSampleVoice(
     filterQ?: number
     detuneCents?: number
     drive?: number
+    loop?: boolean
   } = {},
 ): VoiceHandle {
   const src = ctx.createBufferSource()
@@ -219,6 +220,11 @@ export function makeSampleVoice(
   const rate = Math.pow(2, (pitch - rootMidi) / 12)
   src.playbackRate.setValueAtTime(rate, when)
   if (opts.detuneCents) src.detune.setValueAtTime(opts.detuneCents, when)
+  if (opts.loop && buffer.duration > 0.8) {
+    src.loop = true
+    src.loopStart = Math.min(0.45, buffer.duration * 0.12)
+    src.loopEnd = Math.max(src.loopStart + 0.3, buffer.duration * 0.88)
+  }
 
   let node: AudioNode = src
   if (opts.filterFreq) {
@@ -255,7 +261,7 @@ export function makeSampleVoice(
   g.connect(destination)
 
   const bufDur = buffer.duration / rate
-  const playDur = Math.min(bufDur, duration + r + 0.05)
+  const playDur = opts.loop ? duration + r + 0.05 : Math.min(bufDur, duration + r + 0.05)
   src.start(when, 0)
   src.stop(when + playDur + 0.02)
   return {
