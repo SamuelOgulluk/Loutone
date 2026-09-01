@@ -15,6 +15,7 @@ import {
   PANEL_META,
   PANEL_IDS,
   SLOT_IDS,
+  SLOT_LABELS,
   applyUserHidden,
   clampSides,
   defaultStored,
@@ -29,6 +30,17 @@ import {
 } from './workspace'
 
 const DND = 'application/x-loutone-panel'
+
+function readDraggedPanel(e: React.DragEvent) {
+  const id = (e.dataTransfer.getData(DND) || e.dataTransfer.getData('text/plain')) as PanelId
+  return PANEL_IDS.includes(id) ? id : null
+}
+
+function startPanelDrag(id: PanelId, e: React.DragEvent) {
+  e.dataTransfer.setData(DND, id)
+  e.dataTransfer.setData('text/plain', id)
+  e.dataTransfer.effectAllowed = 'move'
+}
 
 type WorkspaceApi = {
   editMode: boolean
@@ -215,7 +227,7 @@ export function WorkspaceGrid({
 }: {
   panes: Record<PanelId, ReactNode>
 }) {
-  const { visible, editMode, hidePanel, movePanelToSlot, swapSlots } = useWorkspace()
+  const { visible, editMode, hidePanel, movePanelToSlot } = useWorkspace()
   const wrapRef = useRef(null as HTMLDivElement | null)
   const [gridW, setGridW] = useState(1200)
   const [sizes, setSizes] = useState(() => {
@@ -223,7 +235,6 @@ export function WorkspaceGrid({
     return { leftPx: s.leftPx, rightPx: s.rightPx, bottomPct: s.bottomPct }
   })
   const [dropSlot, setDropSlot] = useState(null as SlotId | null)
-  const [pickSlot, setPickSlot] = useState(null as SlotId | null)
   const drag = useRef(null as null | { kind: 'left' | 'right' | 'bottom'; start: number; left: number; right: number; pct: number })
 
   useEffect(() => {
@@ -286,32 +297,18 @@ export function WorkspaceGrid({
     document.body.classList.add(kind === 'bottom' ? 'is-splitting-col' : 'is-splitting-row')
   }
 
-  const onDragStart = (id: PanelId, e: React.DragEvent) => {
-    e.dataTransfer.setData(DND, id)
-    e.dataTransfer.effectAllowed = 'move'
-  }
-
   const onSlotDragOver = (slot: SlotId, e: React.DragEvent) => {
     if (![...e.dataTransfer.types].includes(DND) && ![...e.dataTransfer.types].includes('text/plain')) return
     e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
     setDropSlot(slot)
   }
 
   const onSlotDrop = (slot: SlotId, e: React.DragEvent) => {
     e.preventDefault()
-    const id = (e.dataTransfer.getData(DND) || e.dataTransfer.getData('text/plain')) as PanelId
     setDropSlot(null)
-    if (PANEL_IDS.includes(id)) movePanelToSlot(id, slot)
-  }
-
-  const onSlotClick = (slot: SlotId) => {
-    if (!editMode) return
-    if (!pickSlot) {
-      setPickSlot(slot)
-      return
-    }
-    swapSlots(pickSlot, slot)
-    setPickSlot(null)
+    const id = readDraggedPanel(e)
+    if (id) movePanelToSlot(id, slot)
   }
 
   const sides = clampSides(gridW, !!visible.left, !!visible.right, sizes.leftPx, sizes.rightPx)
@@ -322,15 +319,27 @@ export function WorkspaceGrid({
     const empty = !id
     return (
       <div
-        className={`ws-slot ws-slot-${slot} ${editMode ? 'is-edit' : ''} ${dropSlot === slot ? 'is-drop' : ''} ${pickSlot === slot ? 'is-pick' : ''} ${empty ? 'is-empty' : ''}`}
+        className={`ws-slot ws-slot-${slot} ${editMode ? 'is-edit' : ''} ${dropSlot === slot ? 'is-drop' : ''} ${empty ? 'is-empty' : ''}`}
         onDragOver={(e) => onSlotDragOver(slot, e)}
         onDragLeave={() => setDropSlot((s) => (s === slot ? null : s))}
         onDrop={(e) => onSlotDrop(slot, e)}
       >
         {editMode && (
           <div className="ws-chrome">
-            <span className="ws-grip" title="Glisser pour déplacer">⠿</span>
-            <span className="ws-chrome-title" onClick={() => onSlotClick(slot)}>{id ? PANEL_META[id].label : 'Vide'}</span>
+            {id ? (
+              <span
+                className="ws-chrome-drag"
+                draggable
+                title="Glisser vers un autre emplacement"
+                onDragStart={(e) => startPanelDrag(id, e)}
+                onDragEnd={() => setDropSlot(null)}
+              >
+                <span className="ws-grip" aria-hidden>⠿</span>
+                <span className="ws-chrome-title">{PANEL_META[id].label}</span>
+              </span>
+            ) : (
+              <span className="ws-chrome-title">Emplacement vide</span>
+            )}
             {id && id !== 'arrange' && (
               <button type="button" className="ws-chrome-hide" title="Masquer" onClick={(e) => { e.stopPropagation(); hidePanel(id) }}>
                 ×
@@ -339,13 +348,7 @@ export function WorkspaceGrid({
           </div>
         )}
         {id ? (
-          <div
-            className="ws-slot-body"
-            draggable={editMode}
-            onDragStart={(e) => onDragStart(id, e)}
-          >
-            {panes[id]}
-          </div>
+          <div className="ws-slot-body">{panes[id]}</div>
         ) : editMode ? (
           <div className="ws-empty">Déposer une fenêtre</div>
         ) : null}
@@ -390,18 +393,17 @@ export function WorkspaceGrid({
 
 export function LayoutDock() {
   const {
-    editMode,
     setEditMode,
     overflow,
     autoHidden,
     visible,
     showPanel,
     movePanelToSlot,
-    swapSlots,
     resetLayout,
   } = useWorkspace()
   const [open, setOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+  const [dropSlot, setDropSlot] = useState(null as SlotId | null)
   const btnRef = useRef(null as HTMLButtonElement | null)
   const crowded = overflow.length > 0
 
@@ -412,18 +414,25 @@ export function LayoutDock() {
     setMenuPos({ top: r.bottom + 4, left: Math.min(r.right, window.innerWidth - 16) })
   }
 
+  const closeDock = useCallback(() => {
+    setOpen(false)
+    setEditMode(false)
+    setDropSlot(null)
+  }, [setEditMode])
+
   useEffect(() => {
     if (!open) return
     place()
     const on = () => place()
     const onDown = (e: PointerEvent) => {
-      const t = e.target as Node
+      const t = e.target as HTMLElement
       if (btnRef.current?.contains(t)) return
-      if ((t as HTMLElement).closest?.('.ws-dock-panel')) return
-      setOpen(false)
+      if (t.closest?.('.ws-dock-panel')) return
+      if (t.closest?.('.ws-chrome, .ws-empty, .ws-slot.is-edit')) return
+      closeDock()
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') closeDock()
     }
     window.addEventListener('resize', on)
     window.addEventListener('pointerdown', onDown)
@@ -433,12 +442,46 @@ export function LayoutDock() {
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('keydown', onKey)
     }
-  }, [open])
+  }, [open, closeDock])
 
-  const onChipDrop = (e: React.DragEvent, slot: SlotId) => {
+  const onMapOver = (slot: SlotId, e: React.DragEvent) => {
     e.preventDefault()
-    const id = (e.dataTransfer.getData(DND) || e.dataTransfer.getData('text/plain')) as PanelId
-    if (PANEL_IDS.includes(id)) movePanelToSlot(id, slot)
+    e.dataTransfer.dropEffect = 'move'
+    setDropSlot(slot)
+  }
+
+  const onMapDrop = (slot: SlotId, e: React.DragEvent) => {
+    e.preventDefault()
+    setDropSlot(null)
+    const id = readDraggedPanel(e)
+    if (id) movePanelToSlot(id, slot)
+  }
+
+  const renderMapSlot = (slot: SlotId, wide?: boolean) => {
+    const panel = visible[slot]
+    return (
+      <div
+        key={slot}
+        className={`ws-map-slot ${wide ? 'is-wide' : ''} ${!panel ? 'is-void' : ''} ${dropSlot === slot ? 'is-drop' : ''}`}
+        onDragOver={(e) => onMapOver(slot, e)}
+        onDragLeave={() => setDropSlot((s) => (s === slot ? null : s))}
+        onDrop={(e) => onMapDrop(slot, e)}
+      >
+        <span className="ws-map-cap">{SLOT_LABELS[slot]}</span>
+        {panel ? (
+          <span
+            className="ws-map-chip"
+            draggable
+            onDragStart={(e) => startPanelDrag(panel, e)}
+            onDragEnd={() => setDropSlot(null)}
+          >
+            {PANEL_META[panel].label}
+          </span>
+        ) : (
+          <span className="ws-map-empty">Déposer ici</span>
+        )}
+      </div>
+    )
   }
 
   return (
@@ -446,12 +489,17 @@ export function LayoutDock() {
       <button
         ref={btnRef}
         type="button"
-        className={`btn btn-compact ws-dock-btn ${editMode ? 'btn-active' : ''} ${crowded ? 'is-crowded' : ''}`}
-        title={crowded ? `${overflow.length} fenêtre${overflow.length > 1 ? 's' : ''} hors écran — réorganiser` : 'Éditer l’interface'}
+        className={`btn btn-compact ws-dock-btn ${open ? 'btn-active' : ''} ${crowded ? 'is-crowded' : ''}`}
+        title={crowded ? `${overflow.length} fenêtre${overflow.length > 1 ? 's' : ''} hors écran — réorganiser` : 'Disposer les fenêtres'}
         aria-expanded={open}
         onClick={() => {
-          setOpen((v) => !v)
-          if (!open) place()
+          if (open) {
+            closeDock()
+            return
+          }
+          setOpen(true)
+          setEditMode(true)
+          place()
         }}
       >
         <span className="ws-dock-icon" aria-hidden>▦</span>
@@ -462,80 +510,64 @@ export function LayoutDock() {
           <div
             className="ws-dock-panel tb-menu-panel"
             role="dialog"
-            aria-label="Fenêtres"
+            aria-label="Disposition des fenêtres"
             style={{ top: menuPos.top, left: menuPos.left, transform: 'translateX(-100%)' }}
           >
-            <div className="tb-menu-hint">Interface</div>
-            <button type="button" className={editMode ? 'tb-menu-active' : ''} onClick={() => setEditMode(!editMode)}>
-              {editMode ? 'Terminer l’édition' : 'Éditer l’interface'}
-            </button>
+            <div className="tb-menu-hint">Disposition</div>
             <p className="ws-dock-help">
-              {editMode
-                ? 'Glisse une fenêtre, ou clique deux emplacements pour les permuter.'
-                : crowded
-                  ? 'L’écran est trop petit — des fenêtres sont rangées ici.'
-                  : 'Toutes les fenêtres tiennent à l’écran.'}
+              Glisse une fenêtre sur Gauche, Centre, Droite ou Bas pour la déplacer.
+              {crowded ? ' Les fenêtres hors écran se glissent aussi sur cette carte.' : ''}
             </p>
+            <div className="ws-map">
+              <div className="ws-map-row">
+                {renderMapSlot('left')}
+                {renderMapSlot('center', true)}
+                {renderMapSlot('right')}
+              </div>
+              <div className="ws-map-row">
+                <span className="ws-map-spacer" />
+                {renderMapSlot('bottom', true)}
+                <span className="ws-map-spacer" />
+              </div>
+            </div>
             {overflow.length > 0 && (
               <>
                 <div className="tb-menu-sep" />
                 <div className="tb-menu-hint">Hors écran</div>
-                {overflow.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    title={`Afficher ${PANEL_META[id].label}`}
-                    onClick={() => showPanel(id)}
-                  >
-                    {PANEL_META[id].label}
-                    {autoHidden.includes(id) ? ' · auto' : ''}
-                    <span className="ws-dock-action">Afficher</span>
-                  </button>
-                ))}
+                <div className="ws-tray">
+                  {overflow.map((id) => (
+                    <div
+                      key={id}
+                      role="button"
+                      tabIndex={0}
+                      className="ws-tray-chip"
+                      draggable
+                      title={`Glisser ${PANEL_META[id].label} sur la carte, ou cliquer pour l’afficher`}
+                      onDragStart={(e) => startPanelDrag(id, e)}
+                      onDragEnd={() => setDropSlot(null)}
+                      onClick={() => showPanel(id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          showPanel(id)
+                        }
+                      }}
+                    >
+                      <span>{PANEL_META[id].label}</span>
+                      {autoHidden.includes(id) && (
+                        <span className="ws-tray-note">masqué faute de place</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </>
             )}
             <div className="tb-menu-sep" />
-            <div className="tb-menu-hint">Disposition</div>
-            <div className="ws-mini">
-              <div className="ws-mini-row">
-                {(['left', 'center', 'right'] as SlotId[]).map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    className={`ws-mini-cell ${slot === 'center' ? 'is-wide' : ''} ${!visible[slot] ? 'is-void' : ''}`}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => onChipDrop(e, slot)}
-                    onClick={() => {
-                      if (!editMode) return
-                      const id = overflow[0]
-                      if (!visible[slot] && id) showPanel(id, slot)
-                    }}
-                    title={visible[slot] ? PANEL_META[visible[slot]!].label : 'Vide'}
-                  >
-                    {visible[slot] ? PANEL_META[visible[slot]!].short : '·'}
-                  </button>
-                ))}
-              </div>
-              <div className="ws-mini-row">
-                <span className="ws-mini-spacer" />
-                <button
-                  type="button"
-                  className={`ws-mini-cell is-wide ${!visible.bottom ? 'is-void' : ''}`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => onChipDrop(e, 'bottom')}
-                  title={visible.bottom ? PANEL_META[visible.bottom].label : 'Vide'}
-                >
-                  {visible.bottom ? PANEL_META[visible.bottom].short : '·'}
-                </button>
-                <span className="ws-mini-spacer" />
-              </div>
-            </div>
-            <div className="ws-swap-row">
-              <button type="button" onClick={() => swapSlots('left', 'right')}>Permuter G ↔ D</button>
-              <button type="button" onClick={() => swapSlots('center', 'bottom')}>Permuter C ↕ MIDI</button>
-            </div>
             <button type="button" onClick={() => resetLayout()}>
               Disposition par défaut
+            </button>
+            <button type="button" onClick={closeDock}>
+              Fermer
             </button>
           </div>,
           document.body,

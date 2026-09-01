@@ -6,12 +6,19 @@ export type SlotId = (typeof SLOT_IDS)[number]
 
 export const PANEL_META: Record<
   PanelId,
-  { label: string; short: string; preferred: SlotId; required?: boolean }
+  { label: string; preferred: SlotId; required?: boolean }
 > = {
-  browser: { label: 'Browser', short: 'Br', preferred: 'left' },
-  arrange: { label: 'Arrangement', short: 'Arr', preferred: 'center', required: true },
-  piano: { label: 'Piano roll', short: 'MIDI', preferred: 'bottom' },
-  inspector: { label: 'Inspector', short: 'Insp', preferred: 'right' },
+  browser: { label: 'Browser', preferred: 'left' },
+  arrange: { label: 'Arrangement', preferred: 'center', required: true },
+  piano: { label: 'Piano roll', preferred: 'bottom' },
+  inspector: { label: 'Inspector', preferred: 'right' },
+}
+
+export const SLOT_LABELS: Record<SlotId, string> = {
+  left: 'Gauche',
+  center: 'Centre',
+  right: 'Droite',
+  bottom: 'Bas',
 }
 
 export const DEFAULT_SLOTS: Record<SlotId, PanelId | null> = {

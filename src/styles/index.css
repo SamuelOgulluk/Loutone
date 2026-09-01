@@ -1076,10 +1076,22 @@ body.is-splitting-col * {
   letter-spacing: -0.15em;
 }
 
+.ws-chrome-drag {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  cursor: grab;
+}
+
+.ws-chrome-drag:active {
+  cursor: grabbing;
+}
+
 .ws-chrome-title {
   flex: 1;
   min-width: 0;
-  cursor: pointer;
 }
 
 .ws-chrome-hide {
@@ -1131,8 +1143,8 @@ body.is-splitting-col * {
 }
 
 .ws-dock-panel {
-  min-width: 16rem;
-  max-width: min(22rem, calc(100vw - 1rem));
+  min-width: 21rem;
+  max-width: min(26rem, calc(100vw - 1rem));
 }
 
 .ws-dock-help {
@@ -1150,51 +1162,109 @@ body.is-splitting-col * {
   font-size: 10px;
 }
 
-.ws-mini {
+.ws-map {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0.15rem 0.5rem 0.55rem;
+}
+
+.ws-map-row {
+  display: flex;
+  gap: 6px;
+}
+
+.ws-map-slot {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 0.35rem 0.45rem 0.5rem;
-}
-
-.ws-mini-row {
-  display: flex;
-  gap: 4px;
-}
-
-.ws-mini-cell {
-  flex: 1;
-  min-height: 1.8rem;
+  min-width: 0;
+  min-height: 3.6rem;
+  padding: 0.35rem 0.4rem;
   border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-2);
+}
+
+.ws-map-slot.is-wide {
+  flex: 1.7;
+}
+
+.ws-map-slot.is-void {
+  border-style: dashed;
+  background: transparent;
+}
+
+.ws-map-slot.is-drop {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-2));
+}
+
+.ws-map-cap {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ws-map-chip {
+  display: block;
+  padding: 0.28rem 0.4rem;
   border-radius: 3px;
   background: var(--bg-3);
-  font-size: 10px;
-  text-align: center !important;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 1.25;
+  cursor: grab;
+  color: var(--text);
+  user-select: none;
 }
 
-.ws-mini-cell.is-wide {
-  flex: 1.4;
+.ws-map-chip:active,
+.ws-tray-chip:active {
+  cursor: grabbing;
 }
 
-.ws-mini-cell.is-void {
-  opacity: 0.45;
-  border-style: dashed;
+.ws-map-empty {
+  font-size: 11px;
+  color: var(--muted);
 }
 
-.ws-mini-spacer {
-  flex: 0.7;
+.ws-map-spacer {
+  flex: 0.5;
 }
 
-.ws-swap-row {
+.ws-tray {
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  padding: 0 0.25rem 0.35rem;
+  padding: 0.15rem 0.45rem 0.45rem;
 }
 
-.ws-swap-row button {
-  flex: 1;
-  text-align: center !important;
-  font-size: 11px !important;
+.tb-menu-panel .ws-tray-chip,
+.ws-tray-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-3);
+  cursor: grab;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+  color: var(--text);
+}
+
+.ws-tray-note {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
 }
 
 .arr-track-col {
