@@ -1,0 +1,4 @@
+Karoryfer electric bass (fingered), via tonejs-instruments.
+License: CC BY 3.0 — https://creativecommons.org/licenses/by/3.0/
+https://www.karoryfer.com/karoryfer-samples
+https://github.com/nbrosowsky/tonejs-instruments

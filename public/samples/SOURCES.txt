@@ -1,4 +1,4 @@
-Samples — FreePats / zenvoid.org
+Samples — instruments embarqués
 
 CC0 1.0 (domaine public)
 https://creativecommons.org/publicdomain/zero/1.0/
@@ -9,8 +9,13 @@ epiano-dx      : https://github.com/freepats/fm-piano1
                  DX7 « E. Piano 1 » rendu depuis Hexter
 organ-drawbar  : https://freepats.zenvoid.org/Organ/electric-organ.html
                  Drawbar Organ Emulation (setBfree)
+bass-electric  : Karoryfer Samples (via tonejs-instruments)
+                 basse électrique doigtée, tessiture complète
+                 https://www.karoryfer.com/karoryfer-samples
+                 https://github.com/nbrosowsky/tonejs-instruments
+                 CC BY 3.0
 bass-yr        : https://github.com/freepats/electric-bass-YR
-                 basse doigtée YR
+                 basse Yamaha RBX (octave grave uniquement)
 bass-lately    : https://github.com/freepats/lately-bass
                  DX7 « Lately Bass »
 bass-dx        : https://github.com/freepats/synth-bass-2

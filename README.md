@@ -73,6 +73,6 @@ src-tauri/                 # Shell Tauri 2
 Tous les instruments embarquent des samples locaux (MP3 mono 96 kHz) dans `public/samples/`.
 Sources et licences : `public/samples/SOURCES.txt`.
 
-Presque tout vient de [FreePats](https://freepats.zenvoid.org/) en **CC0** (domaine public) : piano droit KW, DX7 Rhodes / basses / leads / cordes, orgue Hammond (setBfree), guitare classique, FSBS disto, pads New Age et Sweep.
+Presque tout vient de [FreePats](https://freepats.zenvoid.org/) en **CC0** (domaine public) : piano droit KW, DX7 Rhodes / leads / cordes, orgue Hammond (setBfree), guitare classique, FSBS disto, pads New Age et Sweep.
 
-La batterie utilise le [Muldjord Kit](https://github.com/freepats/muldjordkit) de Lars Muldjord (**CC BY 4.0**). Drum samples provided by DrumGizmo.org.
+La basse principale utilise les samples **Karoryfer** (via [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments), **CC BY 3.0**). La batterie utilise le [Muldjord Kit](https://github.com/freepats/muldjordkit) de Lars Muldjord (**CC BY 4.0**). Drum samples provided by DrumGizmo.org.

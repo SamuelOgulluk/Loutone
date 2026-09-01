@@ -116,22 +116,46 @@ function buildDrums() {
   return notes
 }
 
+function bassRoot(midi: number) {
+  return midi > 40 ? midi - 12 : midi
+}
+
 function buildBass() {
   const notes: MidiNote[] = []
   for (let i = 0; i < 16; i++) {
     const s = i * 4
-    const root = BARS[i].bass
-    const next = BARS[(i + 1) % 16].bass
+    const root = bassRoot(BARS[i].bass)
+    const next = bassRoot(BARS[(i + 1) % 16].bass)
+    const lift = i >= 8
+    const color = root + (root % 12 === 8 || root % 12 === 3 ? 4 : 7)
+    const colorTone = color > 50 ? root - 5 : color
+
     if (i === 7 || i === 15) {
-      notes.push(note(root, s, 3.4, 108))
+      notes.push(note(root, s, 2.2, 104))
+      notes.push(note(colorTone, s + 2.35, 0.32, 76))
+      const approach = next > root ? next - 2 : next + 2
+      notes.push(note(approach, s + 2.85, 0.38, 84))
+      notes.push(note(next, s + 3.4, 0.5, 96))
       continue
     }
-    notes.push(note(root, s, 1.15, 110))
-    notes.push(note(root, s + 1.5, 0.32, 76))
-    const fifth = root + 7
-    notes.push(note(fifth > 50 ? root + 5 : fifth, s + 2.5, 0.7, 94))
-    const approach = next > root ? next - 2 : next + 1
-    notes.push(note(approach, s + 3.55, 0.38, 84))
+
+    notes.push(note(root, s, 0.95, lift ? 110 : 104))
+    notes.push(note(root, s + 1.5, 0.14, 48))
+
+    if (i % 2 === 0) {
+      notes.push(note(root, s + 2.25, 0.2, 70))
+      notes.push(note(root, s + 2.75, 0.55, 98))
+    } else {
+      notes.push(note(colorTone, s + 2.05, 0.28, 78))
+      notes.push(note(root, s + 2.75, 0.48, 96))
+    }
+
+    if (i % 4 === 3) {
+      const approach = next > root ? next - 1 : root - 1
+      notes.push(note(approach, s + 3.5, 0.4, 88))
+    } else if (lift) {
+      notes.push(note(root, s + 3.5, 0.16, 58))
+    }
   }
   return notes
 }
@@ -222,11 +246,11 @@ export function createDemoProject(): Project {
         effects: [fx('compressor', { threshold: -16, ratio: 2.4 }), fx('eq', { high: 2 })],
       }),
       midiTrack('Basse', TRACK_COLORS[1], 'bass', buildBass(), {
-        volume: 0.9,
+        volume: 0.82,
         height: 62,
-        clipName: 'Ligne',
+        clipName: 'Poche',
         length,
-        effects: [fx('compressor', { threshold: -14, ratio: 3 }), fx('saturator', { drive: 0.22, mix: 0.28 })],
+        effects: [fx('compressor', { threshold: -18, ratio: 2.2 }), fx('eq', { low: 1.5, high: -1.5 })],
       }),
       midiTrack('Rhodes', TRACK_COLORS[0], 'epiano', buildKeys(), {
         volume: 0.72,

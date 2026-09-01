@@ -1,4 +1,22 @@
 {
+  "bass-electric": [
+    { "midi": 25, "file": "Cs1.mp3" },
+    { "midi": 28, "file": "E1.mp3" },
+    { "midi": 31, "file": "G1.mp3" },
+    { "midi": 34, "file": "As1.mp3" },
+    { "midi": 37, "file": "Cs2.mp3" },
+    { "midi": 40, "file": "E2.mp3" },
+    { "midi": 43, "file": "G2.mp3" },
+    { "midi": 46, "file": "As2.mp3" },
+    { "midi": 49, "file": "Cs3.mp3" },
+    { "midi": 52, "file": "E3.mp3" },
+    { "midi": 55, "file": "G3.mp3" },
+    { "midi": 58, "file": "As3.mp3" },
+    { "midi": 61, "file": "Cs4.mp3" },
+    { "midi": 64, "file": "E4.mp3" },
+    { "midi": 67, "file": "G4.mp3" },
+    { "midi": 70, "file": "As4.mp3" }
+  ],
   "epiano-dx": [
     { "midi": 30, "file": "Fs1.mp3" },
     { "midi": 36, "file": "C2.mp3" },
