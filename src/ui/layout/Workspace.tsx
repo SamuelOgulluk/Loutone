@@ -29,17 +29,12 @@ import {
   type StoredLayout,
 } from './workspace'
 
-const DND = 'application/x-loutone-panel'
-
-function readDraggedPanel(e: React.DragEvent) {
-  const id = (e.dataTransfer.getData(DND) || e.dataTransfer.getData('text/plain')) as PanelId
-  return PANEL_IDS.includes(id) ? id : null
-}
-
-function startPanelDrag(id: PanelId, e: React.DragEvent) {
-  e.dataTransfer.setData(DND, id)
-  e.dataTransfer.setData('text/plain', id)
-  e.dataTransfer.effectAllowed = 'move'
+function slotFromPoint(x: number, y: number) {
+  for (const node of document.elementsFromPoint(x, y)) {
+    const raw = (node as HTMLElement).closest?.('[data-ws-slot]')?.getAttribute('data-ws-slot')
+    if (raw && SLOT_IDS.includes(raw as SlotId)) return raw as SlotId
+  }
+  return null
 }
 
 type WorkspaceApi = {
@@ -53,6 +48,9 @@ type WorkspaceApi = {
   movePanelToSlot: (id: PanelId, slot: SlotId) => void
   swapSlots: (a: SlotId, b: SlotId) => void
   resetLayout: () => void
+  dropHint: SlotId | null
+  dragPanel: PanelId | null
+  startPanelPointerDrag: (id: PanelId, e: React.PointerEvent, onIdle?: () => void) => void
 }
 
 const Ctx = createContext<WorkspaceApi | null>(null)
@@ -72,6 +70,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const setPianoRollOpen = useDawStore((s) => s.setPianoRollOpen)
   const [stored, setStored] = useState<StoredLayout>(defaultStored)
   const [editMode, setEditMode] = useState(false)
+  const [dropHint, setDropHint] = useState(null as SlotId | null)
+  const [dragPanel, setDragPanel] = useState(null as PanelId | null)
+  const [ghost, setGhost] = useState({ x: 0, y: 0 })
   const [box, setBox] = useState(() => ({
     w: typeof window === 'undefined' ? 1280 : window.innerWidth,
     h: typeof window === 'undefined' ? 800 : window.innerHeight,
@@ -197,6 +198,42 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setPianoRollOpen(true)
   }, [setPianoRollOpen])
 
+  const startPanelPointerDrag = useCallback(
+    (id: PanelId, e: React.PointerEvent, onIdle?: () => void) => {
+      if (e.button !== 0) return
+      e.preventDefault()
+      e.stopPropagation()
+      const pointerId = e.pointerId
+      const originX = e.clientX
+      const originY = e.clientY
+      setDragPanel(id)
+      setGhost({ x: originX, y: originY })
+      document.body.classList.add('ws-dragging')
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return
+        setGhost({ x: ev.clientX, y: ev.clientY })
+        setDropHint(slotFromPoint(ev.clientX, ev.clientY))
+      }
+      const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return
+        const slot = slotFromPoint(ev.clientX, ev.clientY)
+        const traveled = Math.hypot(ev.clientX - originX, ev.clientY - originY)
+        if (slot && traveled > 6) movePanelToSlot(id, slot)
+        else if (traveled <= 6) onIdle?.()
+        setDragPanel(null)
+        setDropHint(null)
+        document.body.classList.remove('ws-dragging')
+        window.removeEventListener('pointermove', onMove)
+        window.removeEventListener('pointerup', onUp)
+        window.removeEventListener('pointercancel', onUp)
+      }
+      window.addEventListener('pointermove', onMove)
+      window.addEventListener('pointerup', onUp)
+      window.addEventListener('pointercancel', onUp)
+    },
+    [movePanelToSlot],
+  )
+
   const api = useMemo<WorkspaceApi>(
     () => ({
       editMode,
@@ -209,8 +246,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       movePanelToSlot,
       swapSlots,
       resetLayout,
+      dropHint,
+      dragPanel,
+      startPanelPointerDrag,
     }),
-    [editMode, fitted, overflow, hidePanel, showPanel, movePanelToSlot, swapSlots, resetLayout],
+    [editMode, fitted, overflow, hidePanel, showPanel, movePanelToSlot, swapSlots, resetLayout, dropHint, dragPanel, startPanelPointerDrag],
   )
 
   return (
@@ -218,6 +258,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       <div ref={wrapRef} className="ws-root">
         {children}
       </div>
+      {dragPanel &&
+        createPortal(
+          <div className="ws-drag-ghost" style={{ left: ghost.x, top: ghost.y }}>
+            {PANEL_META[dragPanel].label}
+          </div>,
+          document.body,
+        )}
     </Ctx.Provider>
   )
 }
@@ -227,14 +274,13 @@ export function WorkspaceGrid({
 }: {
   panes: Record<PanelId, ReactNode>
 }) {
-  const { visible, editMode, hidePanel, movePanelToSlot } = useWorkspace()
+  const { visible, editMode, hidePanel, dropHint, startPanelPointerDrag } = useWorkspace()
   const wrapRef = useRef(null as HTMLDivElement | null)
   const [gridW, setGridW] = useState(1200)
   const [sizes, setSizes] = useState(() => {
     const s = loadStored()
     return { leftPx: s.leftPx, rightPx: s.rightPx, bottomPct: s.bottomPct }
   })
-  const [dropSlot, setDropSlot] = useState(null as SlotId | null)
   const drag = useRef(null as null | { kind: 'left' | 'right' | 'bottom'; start: number; left: number; right: number; pct: number })
 
   useEffect(() => {
@@ -297,20 +343,6 @@ export function WorkspaceGrid({
     document.body.classList.add(kind === 'bottom' ? 'is-splitting-col' : 'is-splitting-row')
   }
 
-  const onSlotDragOver = (slot: SlotId, e: React.DragEvent) => {
-    if (![...e.dataTransfer.types].includes(DND) && ![...e.dataTransfer.types].includes('text/plain')) return
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDropSlot(slot)
-  }
-
-  const onSlotDrop = (slot: SlotId, e: React.DragEvent) => {
-    e.preventDefault()
-    setDropSlot(null)
-    const id = readDraggedPanel(e)
-    if (id) movePanelToSlot(id, slot)
-  }
-
   const sides = clampSides(gridW, !!visible.left, !!visible.right, sizes.leftPx, sizes.rightPx)
   const hasBottom = !!visible.bottom
 
@@ -319,20 +351,16 @@ export function WorkspaceGrid({
     const empty = !id
     return (
       <div
-        className={`ws-slot ws-slot-${slot} ${editMode ? 'is-edit' : ''} ${dropSlot === slot ? 'is-drop' : ''} ${empty ? 'is-empty' : ''}`}
-        onDragOver={(e) => onSlotDragOver(slot, e)}
-        onDragLeave={() => setDropSlot((s) => (s === slot ? null : s))}
-        onDrop={(e) => onSlotDrop(slot, e)}
+        className={`ws-slot ws-slot-${slot} ${editMode ? 'is-edit' : ''} ${dropHint === slot ? 'is-drop' : ''} ${empty ? 'is-empty' : ''}`}
+        data-ws-slot={slot}
       >
         {editMode && (
           <div className="ws-chrome">
             {id ? (
               <span
                 className="ws-chrome-drag"
-                draggable
                 title="Glisser vers un autre emplacement"
-                onDragStart={(e) => startPanelDrag(id, e)}
-                onDragEnd={() => setDropSlot(null)}
+                onPointerDown={(e) => startPanelPointerDrag(id, e)}
               >
                 <span className="ws-grip" aria-hidden>⠿</span>
                 <span className="ws-chrome-title">{PANEL_META[id].label}</span>
@@ -398,12 +426,12 @@ export function LayoutDock() {
     autoHidden,
     visible,
     showPanel,
-    movePanelToSlot,
     resetLayout,
+    dropHint,
+    startPanelPointerDrag,
   } = useWorkspace()
   const [open, setOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
-  const [dropSlot, setDropSlot] = useState(null as SlotId | null)
   const btnRef = useRef(null as HTMLButtonElement | null)
   const crowded = overflow.length > 0
 
@@ -417,7 +445,6 @@ export function LayoutDock() {
   const closeDock = useCallback(() => {
     setOpen(false)
     setEditMode(false)
-    setDropSlot(null)
   }, [setEditMode])
 
   useEffect(() => {
@@ -428,7 +455,8 @@ export function LayoutDock() {
       const t = e.target as HTMLElement
       if (btnRef.current?.contains(t)) return
       if (t.closest?.('.ws-dock-panel')) return
-      if (t.closest?.('.ws-chrome, .ws-empty, .ws-slot.is-edit')) return
+      if (t.closest?.('.ws-chrome, .ws-empty, .ws-slot.is-edit, .ws-drag-ghost')) return
+      if (document.body.classList.contains('ws-dragging')) return
       closeDock()
     }
     const onKey = (e: KeyboardEvent) => {
@@ -444,37 +472,17 @@ export function LayoutDock() {
     }
   }, [open, closeDock])
 
-  const onMapOver = (slot: SlotId, e: React.DragEvent) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDropSlot(slot)
-  }
-
-  const onMapDrop = (slot: SlotId, e: React.DragEvent) => {
-    e.preventDefault()
-    setDropSlot(null)
-    const id = readDraggedPanel(e)
-    if (id) movePanelToSlot(id, slot)
-  }
-
   const renderMapSlot = (slot: SlotId, wide?: boolean) => {
     const panel = visible[slot]
     return (
       <div
         key={slot}
-        className={`ws-map-slot ${wide ? 'is-wide' : ''} ${!panel ? 'is-void' : ''} ${dropSlot === slot ? 'is-drop' : ''}`}
-        onDragOver={(e) => onMapOver(slot, e)}
-        onDragLeave={() => setDropSlot((s) => (s === slot ? null : s))}
-        onDrop={(e) => onMapDrop(slot, e)}
+        data-ws-slot={slot}
+        className={`ws-map-slot ${wide ? 'is-wide' : ''} ${!panel ? 'is-void' : ''} ${dropHint === slot ? 'is-drop' : ''}`}
       >
         <span className="ws-map-cap">{SLOT_LABELS[slot]}</span>
         {panel ? (
-          <span
-            className="ws-map-chip"
-            draggable
-            onDragStart={(e) => startPanelDrag(panel, e)}
-            onDragEnd={() => setDropSlot(null)}
-          >
+          <span className="ws-map-chip" onPointerDown={(e) => startPanelPointerDrag(panel, e)}>
             {PANEL_META[panel].label}
           </span>
         ) : (
@@ -541,11 +549,8 @@ export function LayoutDock() {
                       role="button"
                       tabIndex={0}
                       className="ws-tray-chip"
-                      draggable
                       title={`Glisser ${PANEL_META[id].label} sur la carte, ou cliquer pour l’afficher`}
-                      onDragStart={(e) => startPanelDrag(id, e)}
-                      onDragEnd={() => setDropSlot(null)}
-                      onClick={() => showPanel(id)}
+                      onPointerDown={(e) => startPanelPointerDrag(id, e, () => showPanel(id))}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault()

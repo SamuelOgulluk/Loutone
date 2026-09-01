@@ -1083,6 +1083,7 @@ body.is-splitting-col * {
   flex: 1;
   min-width: 0;
   cursor: grab;
+  touch-action: none;
 }
 
 .ws-chrome-drag:active {
@@ -1219,6 +1220,7 @@ body.is-splitting-col * {
   cursor: grab;
   color: var(--text);
   user-select: none;
+  touch-action: none;
 }
 
 .ws-map-chip:active,
@@ -1259,12 +1261,41 @@ body.is-splitting-col * {
   text-align: left;
   white-space: normal;
   color: var(--text);
+  touch-action: none;
 }
 
 .ws-tray-note {
   font-size: 10px;
   color: var(--muted);
   font-weight: 400;
+}
+
+.ws-drag-ghost {
+  position: fixed;
+  z-index: 20000;
+  pointer-events: none;
+  transform: translate(-20%, -130%);
+  padding: 0.28rem 0.55rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+
+body.ws-dragging,
+body.ws-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+body.ws-dragging .ws-map-chip,
+body.ws-dragging .ws-chrome-drag,
+body.ws-dragging .ws-tray-chip,
+body.ws-dragging .ws-drag-ghost {
+  pointer-events: none;
 }
 
 .arr-track-col {
