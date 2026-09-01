@@ -77,22 +77,22 @@ function midiTrack(
 
 // i – iv – bVII – III – bVI – iiø – V – i (Cm), 16 mesures @ 84 BPM
 const BARS = [
+  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9     Eb G Bb D
+  { bass: 41, chord: [53, 56, 60, 63] }, // Fm7     F Ab C Eb
+  { bass: 34, chord: [50, 53, 56, 60] }, // Bb9     D F Ab C
+  { bass: 39, chord: [55, 58, 62, 65] }, // Ebmaj9  G Bb D F
+  { bass: 44, chord: [48, 51, 55, 58] }, // Abmaj9  C Eb G Bb
+  { bass: 38, chord: [50, 53, 56, 60] }, // Dm7b5   D F Ab C
+  { bass: 43, chord: [53, 57, 60, 65] }, // G9sus   F A C F
   { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
-  { bass: 41, chord: [53, 56, 60, 63] }, // Fm7
-  { bass: 34, chord: [50, 56, 60, 65] }, // Bb13
-  { bass: 39, chord: [55, 58, 62, 65] }, // Ebmaj9
-  { bass: 44, chord: [48, 51, 55, 60] }, // Abmaj7
-  { bass: 38, chord: [50, 53, 56, 60] }, // Dm7b5
-  { bass: 43, chord: [48, 53, 55, 60] }, // G7sus
+  { bass: 36, chord: [51, 55, 58, 65] }, // Cm11    Eb G Bb F
+  { bass: 41, chord: [56, 60, 63, 67] }, // Fm9     Ab C Eb G
+  { bass: 34, chord: [50, 53, 56, 60] }, // Bb9
+  { bass: 39, chord: [55, 58, 62, 67] }, // Ebmaj7  G Bb D G
+  { bass: 44, chord: [48, 51, 55, 58] }, // Abmaj9
+  { bass: 43, chord: [47, 50, 53, 57] }, // G7      B D F A
   { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
-  { bass: 36, chord: [51, 55, 58, 67] }, // Cm11
-  { bass: 41, chord: [53, 56, 60, 65] }, // Fm9
-  { bass: 34, chord: [50, 55, 56, 60] }, // Bb9
-  { bass: 39, chord: [53, 55, 58, 62] }, // Ebmaj7
-  { bass: 44, chord: [48, 51, 55, 63] }, // Abmaj9
-  { bass: 43, chord: [47, 53, 55, 62] }, // G7
-  { bass: 36, chord: [51, 55, 58, 62] }, // Cm9
-  { bass: 36, chord: [48, 55, 58, 63] }, // Cm (land)
+  { bass: 36, chord: [48, 55, 58, 63] }, // Cm7     C G Bb Eb
 ] as const
 
 function buildDrums() {
@@ -165,13 +165,14 @@ function buildKeys() {
   for (let i = 0; i < 16; i++) {
     const s = i * 4
     const c = [...BARS[i].chord]
-    notes.push(...chord(c, s, 1.65, 76))
+    const outer = [c[0], c[c.length - 1]]
+    notes.push(...chord(c, s, 1.7, 74))
     if (i === 7 || i === 15) {
-      notes.push(...chord(c, s + 2, 1.8, 62))
+      notes.push(...chord(c, s + 2, 1.85, 60))
       continue
     }
-    notes.push(...chord([c[0], c[2]], s + 2, 0.35, 64))
-    notes.push(...chord(c, s + 2.75, 1.05, 70))
+    notes.push(...chord(outer, s + 2, 0.4, 58))
+    notes.push(...chord(c, s + 2.7, 1.15, 68))
   }
   return notes
 }
