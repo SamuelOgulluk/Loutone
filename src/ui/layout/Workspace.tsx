@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -59,7 +60,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const setPianoRollOpen = useDawStore((s) => s.setPianoRollOpen)
   const [stored, setStored] = useState<StoredLayout>(defaultStored)
   const [editMode, setEditMode] = useState(false)
-  const [box, setBox] = useState({ w: 1280, h: 800 })
+  const [box, setBox] = useState(() => ({
+    w: typeof window === 'undefined' ? 1280 : window.innerWidth,
+    h: typeof window === 'undefined' ? 800 : window.innerHeight,
+  }))
   const wrapRef = useRef(null as HTMLDivElement | null)
 
   useEffect(() => {
@@ -74,14 +78,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = wrapRef.current
-    if (!el) return
     const apply = () => {
-      const r = el.getBoundingClientRect()
-      setBox({ w: r.width, h: r.height })
+      const r = el?.getBoundingClientRect()
+      const w = r && r.width > 40 ? r.width : window.innerWidth
+      const h = r && r.height > 40 ? r.height : window.innerHeight
+      setBox({ w, h })
     }
     apply()
+    if (!el) return
     const ro = new ResizeObserver(apply)
     ro.observe(el)
     window.addEventListener('resize', apply)

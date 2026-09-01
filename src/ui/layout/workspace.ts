@@ -23,7 +23,7 @@ export const DEFAULT_SLOTS: Record<SlotId, PanelId | null> = {
 
 export const SIDE_MIN = 168
 export const SIDE_MAX = 420
-export const CENTER_MIN = 280
+export const CENTER_MIN = 380
 export const BOTTOM_MIN = 140
 export const TOP_CHROME = 52
 
@@ -125,6 +125,8 @@ export function fitToViewport(
   }
 
   const usedW = () => (next.left ? SIDE_MIN : 0) + (next.right ? SIDE_MIN : 0) + CENTER_MIN + 12
+  if (width < 1080) take('left')
+  if (width < 900) take('right')
   const hideOrder: SlotId[] = ['left', 'right']
   while (usedW() > width) {
     const slot = hideOrder.find((s) => next[s] && next[s] !== 'arrange')
@@ -132,8 +134,8 @@ export function fitToViewport(
     take(slot)
   }
 
-  const usedH = () => TOP_CHROME + CENTER_MIN * 0.55 + (next.bottom ? BOTTOM_MIN : 0)
-  if (usedH() > height && next.bottom && next.bottom !== 'arrange') take('bottom')
+  const usedH = () => TOP_CHROME + 220 + (next.bottom ? BOTTOM_MIN : 0)
+  if ((usedH() > height || width < 640) && next.bottom && next.bottom !== 'arrange') take('bottom')
 
   if (!Object.values(next).includes('arrange')) {
     if (next.center && next.center !== 'arrange') autoHidden.push(next.center)
