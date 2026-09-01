@@ -4,6 +4,7 @@ import { useDawStore } from '@/store/useDawStore'
 import { audioEngine } from '@/audio/engine'
 import { togglePlay, stopTransport } from '@/ui/hooks/useTransport'
 import { THEME_IDS, THEME_LABELS, applyTheme, getStoredTheme } from '@/ui/theme'
+import { LayoutDock } from '@/ui/layout/Workspace'
 import { TRACK_COLORS, uid } from '@/types/project'
 import type { WhistleRecorder } from '@/audio/whistleToMidi'
 
@@ -220,20 +221,20 @@ export function TransportBar() {
   const tick = Math.floor((positionBeat % 1) * 100)
 
   return (
-    <header className="panel flex items-center gap-3 px-3 py-2 overflow-visible">
-      <div className="flex items-center gap-2 pr-3 border-r border-[var(--line)]">
+    <header className="panel tb">
+      <div className="tb-brand">
         <span className="inline-flex items-center gap-1.5 text-[var(--accent)]" title="Loutone">
           <img src={`${import.meta.env.BASE_URL}loutone.svg`} alt="" width={24} height={24} className="shrink-0 rounded-[6px]" />
-          <span className="text-xl font-semibold tracking-tight">Loutone</span>
+          <span className="tb-brand-name text-xl font-semibold tracking-tight">Loutone</span>
         </span>
         <input
-          className="bg-transparent border-none text-sm text-[var(--muted)] w-36"
+          className="tb-project-name bg-transparent border-none text-sm text-[var(--muted)] w-36"
           value={project.name}
           onChange={(e) => setName(e.target.value)}
         />
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="tb-cluster tb-transport">
         <button className="btn" title="Stop" onClick={() => void stopTransport()}>■</button>
         <button className={`btn ${playing ? 'btn-active' : 'btn-accent'}`} title="Play (Space)" onClick={() => void togglePlay()}>
           {playing ? '❚❚' : '▶'}
@@ -261,11 +262,11 @@ export function TransportBar() {
         </span>
       )}
 
-      <div className="mono text-sm px-3 py-1 rounded bg-[var(--bg-0)] border border-[var(--line)] min-w-[7.5rem] text-center">
+      <div className="mono text-sm px-2 py-1 rounded bg-[var(--bg-0)] border border-[var(--line)] min-w-[6.5rem] text-center shrink-0">
         {String(bars).padStart(3, '0')}.{beatInBar}.{String(tick).padStart(2, '0')}
       </div>
 
-      <label className="flex items-center gap-1 text-sm text-[var(--muted)]">
+      <label className="tb-hide-md flex items-center gap-1 text-sm text-[var(--muted)]">
         BPM
         <input
           type="number"
@@ -279,14 +280,14 @@ export function TransportBar() {
 
       <button
         type="button"
-        className={`btn ${metronome ? 'btn-active' : ''}`}
+        className={`btn tb-hide-md ${metronome ? 'btn-active' : ''}`}
         title={metronome ? 'Métronome activé' : 'Métronome'}
         onClick={() => setMetronome(!metronome)}
       >
         ♩
       </button>
 
-      <label className="flex items-center gap-1 text-sm text-[var(--muted)]">
+      <label className="tb-hide-lg flex items-center gap-1 text-sm text-[var(--muted)]">
         Mesure
         <select
           value={`${project.timeSignature.numerator}/${project.timeSignature.denominator}`}
@@ -305,18 +306,18 @@ export function TransportBar() {
 
       <button
         type="button"
-        className={`btn btn-accent shrink-0 ${mainView === 'modes' ? 'btn-active' : ''}`}
+        className={`btn btn-accent shrink-0 tb-modes ${mainView === 'modes' ? 'btn-active' : ''}`}
         title="Onglet Modes & structure"
         onClick={() => setMainView(mainView === 'modes' ? 'arrange' : 'modes')}
       >
-        Modes & structure
+        Modes
       </button>
 
-      <button className={`btn ${snap ? 'btn-active' : ''}`} onClick={() => setSnap(!snap)} title="Snap (S)">
+      <button className={`btn tb-hide-md ${snap ? 'btn-active' : ''}`} onClick={() => setSnap(!snap)} title="Snap (S)">
         Snap
       </button>
 
-      <label className="flex items-center gap-1 text-sm text-[var(--muted)]">
+      <label className="tb-hide-lg flex items-center gap-1 text-sm text-[var(--muted)]">
         Zoom
         <input
           type="range"
@@ -327,7 +328,9 @@ export function TransportBar() {
         />
       </label>
 
-      <div className="flex-1" />
+      <div className="flex-1 min-w-2" />
+
+      <LayoutDock />
 
       <div
         ref={triggerRef}
@@ -428,6 +431,43 @@ export function TransportBar() {
             >
               Début
             </button>
+            <div className="tb-menu-sep" />
+            <div className="tb-menu-theme-slot">
+              <span className="tb-menu-hint">Transport</span>
+              <label className="tb-menu-field">
+                BPM
+                <input
+                  type="number"
+                  className="mono w-16"
+                  value={project.bpm}
+                  min={20}
+                  max={300}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                />
+              </label>
+              <label className="tb-menu-field">
+                Mesure
+                <select
+                  value={`${project.timeSignature.numerator}/${project.timeSignature.denominator}`}
+                  onChange={(e) => {
+                    const [n, d] = e.target.value.split('/').map(Number)
+                    setTimeSignature(n, d)
+                  }}
+                >
+                  <option value="4/4">4/4</option>
+                  <option value="3/4">3/4</option>
+                  <option value="6/8">6/8</option>
+                  <option value="5/4">5/4</option>
+                  <option value="7/8">7/8</option>
+                </select>
+              </label>
+              <button type="button" role="menuitem" className={snap ? 'tb-menu-active' : ''} onClick={() => setSnap(!snap)}>
+                Snap
+              </button>
+              <button type="button" role="menuitem" className={metronome ? 'tb-menu-active' : ''} onClick={() => setMetronome(!metronome)}>
+                Métronome
+              </button>
+            </div>
             <div className="tb-menu-sep" />
             <div className="tb-menu-theme-slot">
               <span className="tb-menu-hint">Thème</span>

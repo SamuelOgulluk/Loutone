@@ -614,11 +614,11 @@ export function Arrangement() {
       <div className="px-3 py-2 border-b border-[var(--line)] flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-[var(--accent)]">Arrangement</h2>
-          <p className="text-xs text-[var(--muted)]">+ Piste → glisser un instrument · Ctrl+Z/Y · Ctrl+C/V · Ctrl+clic · A : automation</p>
+          <p className="text-xs text-[var(--muted)] tb-hide-lg">+ Piste → glisser un instrument · Ctrl+Z/Y · Ctrl+C/V · Ctrl+clic · A : automation</p>
         </div>
       </div>
       <div className="flex flex-1 min-h-0 min-w-0">
-        <div className="w-60 shrink-0 border-r border-[var(--line)] overflow-y-auto">
+        <div className="arr-track-col shrink-0 border-r border-[var(--line)] overflow-y-auto">
           <div className="h-7 border-b border-[var(--line)] flex items-center px-1 gap-0.5">
             {autoModes.map((mode) => (
               <button

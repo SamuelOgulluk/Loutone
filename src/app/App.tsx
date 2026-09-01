@@ -3,7 +3,7 @@ import { TransportBar } from '@/ui/TransportBar/TransportBar'
 import { Browser } from '@/ui/Browser/Browser'
 import { Arrangement } from '@/ui/Arrangement/Arrangement'
 import { Inspector } from '@/ui/Inspector/Inspector'
-import { Split } from '@/ui/layout/Split'
+import { WorkspaceGrid, WorkspaceProvider } from '@/ui/layout/Workspace'
 import { useDawStore } from '@/store/useDawStore'
 import { useKeyboardShortcuts, useTransportClock } from '@/ui/hooks/useTransport'
 import { audioEngine } from '@/audio/engine'
@@ -27,7 +27,6 @@ function scheduleIdle(fn: () => void) {
 }
 
 export function App() {
-  const pianoRollOpen = useDawStore((s) => s.pianoRollOpen)
   const mainView = useDawStore((s) => s.mainView)
   useTransportClock()
   useKeyboardShortcuts()
@@ -58,7 +57,6 @@ export function App() {
     return () => window.removeEventListener('pointerdown', unlock)
   }, [])
 
-  // Prefetch des panneaux hors chemin critique
   useEffect(() => {
     scheduleIdle(() => {
       void import('@/ui/MidiEditor/PianoRoll')
@@ -67,7 +65,7 @@ export function App() {
   }, [])
 
   return (
-    <div className="h-full w-full min-w-0 overflow-hidden flex flex-col gap-2 p-2">
+    <WorkspaceProvider>
       <TransportBar />
       {mainView === 'modes' ? (
         <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -76,39 +74,19 @@ export function App() {
           </Suspense>
         </div>
       ) : (
-        <Split
-          className="flex-1 min-h-0 min-w-0"
-          axis="row"
-          mode="sides-px"
-          storageKey="arrange-main-v3"
-          initial={[220, 280]}
-          min={[160, 200]}
-          max={[420, 480]}
-        >
-          <Browser />
-          <div className="h-full min-h-0 min-w-0 overflow-hidden">
-            {pianoRollOpen ? (
-              <Split
-                className="h-full"
-                axis="column"
-                mode="percent"
-                storageKey="arrange-center"
-                initial={[48, 52]}
-                min={[25, 25]}
-                max={[75, 75]}
-              >
-                <Arrangement />
-                <Suspense fallback={<div className="panel h-full" />}>
-                  <PianoRoll />
-                </Suspense>
-              </Split>
-            ) : (
-              <Arrangement />
-            )}
-          </div>
-          <Inspector />
-        </Split>
+        <WorkspaceGrid
+          panes={{
+            browser: <Browser />,
+            arrange: <Arrangement />,
+            piano: (
+              <Suspense fallback={<div className="panel h-full" />}>
+                <PianoRoll />
+              </Suspense>
+            ),
+            inspector: <Inspector />,
+          }}
+        />
       )}
-    </div>
+    </WorkspaceProvider>
   )
 }
